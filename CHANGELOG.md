@@ -6,6 +6,7 @@ Initial public patch-kit packaging.
 
 ### Added
 
+- Prominent README warning that Tlon-patched installs should not run `hermes update` directly; the wrapper runs it as part of the safe update/reapply flow.
 - `update-hermes-with-tlon.sh` portable update/reapply wrapper.
 - `apply-tlon.sh` portable guarded patch application script.
 - `tlon-pr.patch` reusable Tlon gateway patch.

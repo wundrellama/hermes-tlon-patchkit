@@ -8,6 +8,25 @@ This kit is intended for machines where Hermes is installed from a Git checkout,
 ~/.hermes/hermes-agent
 ```
 
+## Important: Do Not Run `hermes update` Directly
+
+If your Hermes install uses this Tlon patch, **do not run `hermes update` directly**.
+
+Use the wrapper instead:
+
+```bash
+bash ./update-hermes-with-tlon.sh
+```
+
+The wrapper runs `hermes update` as part of its controlled flow, then reapplies `tlon-pr.patch` safely with preflight checks. Running `hermes update` directly can leave the checkout in a half-updated state, restore stale local changes, or produce patch conflicts that break the Hermes CLI before the Tlon patch has been refreshed.
+
+For routine updates, the correct command is:
+
+```bash
+bash ./update-hermes-with-tlon.sh --dry-run
+bash ./update-hermes-with-tlon.sh
+```
+
 ## Contents
 
 | File | Purpose |
