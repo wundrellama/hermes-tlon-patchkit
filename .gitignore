@@ -1,0 +1,20 @@
+# Local scratch files
+*.bak
+*.tmp
+*.rej
+*.orig
+.DS_Store
+
+# Logs
+*.log
+
+# Python/tool caches
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Local env/secrets
+.env
+.env.*
+*.key
+*.pem
