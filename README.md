@@ -83,8 +83,6 @@ Do not let `hermes update` try to carry the Tlon patch through the update automa
 | `CHANGELOG.md` | Release history. |
 | `checksums.txt` | SHA-256 checksums for package files. |
 
-`apply-tlon-portable.sh` is intentionally not included. It was a compatibility shim and is deprecated; `apply-tlon.sh` itself is now portable.
-
 ## Requirements
 
 - Bash
@@ -212,9 +210,3 @@ TLON_SHIP_NAME=...
 TLON_SHIP_CODE=...
 TLON_OWNER_SHIP=...
 ```
-
-Never commit ship codes, API keys, auth cookies, or private channel identifiers.
-
-## Branch Naming
-
-This repository uses `master` as its default branch.
