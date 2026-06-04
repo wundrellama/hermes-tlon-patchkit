@@ -27,6 +27,51 @@ bash ./update-hermes-with-tlon.sh --dry-run
 bash ./update-hermes-with-tlon.sh
 ```
 
+## Mental Model
+
+Think of this kit as a small, repeatable rebase machine for a local Hermes customization.
+
+Hermes upstream moves over time. The Tlon gateway integration lives outside upstream for now, so it has to be reapplied after upstream updates. The unsafe version of that workflow is:
+
+```text
+run hermes update directly
+hope Git restores local changes cleanly
+notice too late if pyproject.toml or Python files now contain conflict markers
+```
+
+This kit makes the flow explicit instead:
+
+```text
+clean upstream Hermes checkout
+        ↓
+run Hermes' normal updater
+        ↓
+start from the updated upstream branch
+        ↓
+apply tlon-pr.patch in a disposable worktree first
+        ↓
+if the patch applies and sanity checks pass, apply it to the real checkout
+        ↓
+verify imports, CLI startup, dependencies, and focused tests
+        ↓
+commit the result on the local tlon-apply branch
+```
+
+There are two scripts because they have different jobs:
+
+- `update-hermes-with-tlon.sh` is the outer workflow. It owns the safe update order: get back to clean upstream, run `hermes update`, then call the patch applicator.
+- `apply-tlon.sh` is the patch applicator. It owns Git hygiene, disposable-worktree preflight, conflict detection, dependency pinning, import checks, and focused tests.
+
+The patch file itself, `tlon-pr.patch`, is just the source delta: "given upstream Hermes, add the Tlon gateway/platform/tooling changes." It is intentionally dumb. The scripts provide the guardrails.
+
+The important invariant is:
+
+```text
+upstream first, Tlon second
+```
+
+Do not let `hermes update` try to carry the Tlon patch through the update automatically. That is how you get conflict markers in live files and a Hermes CLI that explodes before it can help you. Tiny tragedy, avoidable with Bash.
+
 ## Contents
 
 | File | Purpose |
