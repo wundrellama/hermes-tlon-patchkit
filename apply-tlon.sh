@@ -177,7 +177,7 @@ preflight_patch() {
         git -C "$HERMES_AGENT" worktree remove --force "$verify_dir" >/dev/null 2>&1 || true
         rm -rf "$verify_dir" >/dev/null 2>&1 || true
     }
-    trap cleanup_preflight RETURN
+    trap cleanup_preflight EXIT
 
     echo "==> Preflighting patch in disposable worktree from $base_branch..."
     git worktree add --detach "$verify_dir" "$base_branch" >/dev/null
@@ -191,6 +191,8 @@ with open('pyproject.toml', 'rb') as f:
 print('  pyproject.toml parses OK')
 PY
     )
+    cleanup_preflight
+    trap - EXIT
     echo "  patch preflight OK"
 }
 

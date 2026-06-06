@@ -17,6 +17,7 @@ Initial public patch-kit packaging.
 ### Fixed
 
 - Refreshed `tlon-pr.patch` against Hermes upstream `66a6b9c93`, preserving upstream's new update-stream reconnect test and Matrix `Markdown` dependency while keeping the Tlon-required `aiohttp==3.13.5` pins.
+- `apply-tlon.sh` now reliably removes disposable preflight worktrees on both success and failure.
 - `apply-tlon.sh` now reports stale-patch preflight conflicts clearly and states that the live checkout was not modified.
 - README failure guidance now covers generated-file dirty checkouts and stale-patch/upstream-drift preflight failures.
 - Script Git-repo detection now accepts linked worktrees where `.git` is a file, not only primary checkouts where `.git` is a directory.
