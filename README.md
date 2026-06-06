@@ -186,14 +186,46 @@ The scripts are designed to fail before damaging the live Hermes checkout.
 
 ## Failure Guidance
 
-If `--dry-run` fails, do not apply the patch. The patch is probably stale against current upstream Hermes.
+### Dirty checkout before update
+
+If the wrapper stops with output like:
+
+```text
+ M package-lock.json
+?? .hermes-bootstrap-complete
+ERROR: working tree is not clean; commit/stash/restore before updating
+```
+
+clean those generated/local files before retrying:
+
+```bash
+cd ~/.hermes/hermes-agent
+git restore package-lock.json
+rm -f .hermes-bootstrap-complete
+git status --short
+```
+
+`git status --short` should be empty before running the wrapper.
+
+### Stale patch / upstream drift
+
+If `--dry-run` or the wrapper fails during patch preflight with output like:
+
+```text
+Applied patch to 'pyproject.toml' with conflicts.
+U pyproject.toml
+ERROR: tlon-pr.patch does not apply cleanly in preflight.
+The live Hermes checkout was not modified.
+```
+
+stop. Do not apply the patch to the live checkout. The patch is stale against current upstream Hermes.
 
 The normal recovery path is:
 
 1. Apply the patch manually in a temporary worktree.
 2. Resolve conflicts there.
 3. Run focused tests.
-4. Regenerate `tlon-pr.patch` from the resolved commit.
+4. Regenerate `tlon-pr.patch` from the resolved tree.
 5. Re-run `update-hermes-with-tlon.sh --dry-run`.
 
 Do not let `hermes update` restore local Tlon changes automatically. Update clean upstream Hermes first, then reapply Tlon deliberately.

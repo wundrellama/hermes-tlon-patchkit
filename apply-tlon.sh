@@ -130,6 +130,45 @@ check_no_conflicts() {
     git diff --check
 }
 
+apply_patch_checked() {
+    local phase="$1"
+    local apply_log
+    apply_log="$(mktemp /tmp/apply-tlon-git-apply.XXXXXX)"
+
+    if git apply --3way "$PATCH" >"$apply_log" 2>&1; then
+        cat "$apply_log"
+        rm -f "$apply_log"
+        check_no_conflicts
+        return 0
+    fi
+
+    cat "$apply_log"
+    rm -f "$apply_log"
+    echo ""
+    echo "ERROR: tlon-pr.patch does not apply cleanly in $phase."
+    if [ "$phase" = "preflight" ]; then
+        echo "The live Hermes checkout was not modified."
+        echo "Refresh tlon-pr.patch against the current upstream base before applying."
+    else
+        echo "The live checkout may be on $BRANCH with a failed patch application."
+        echo "Inspect 'git status' before doing anything else."
+    fi
+
+    if git ls-files -u | grep -q .; then
+        echo ""
+        echo "Unmerged entries:"
+        git ls-files -u
+    fi
+
+    if git grep -n -E '^(<<<<<<<|>>>>>>>)( |$)' -- '*.py' '*.toml' '*.md' > /tmp/apply-tlon-conflict-markers.txt 2>/dev/null; then
+        echo ""
+        echo "Conflict markers:"
+        sed -n '1,120p' /tmp/apply-tlon-conflict-markers.txt
+    fi
+
+    exit 1
+}
+
 preflight_patch() {
     local base_branch="$1"
     local verify_dir
@@ -144,8 +183,7 @@ preflight_patch() {
     git worktree add --detach "$verify_dir" "$base_branch" >/dev/null
     (
         cd "$verify_dir"
-        git apply --3way "$PATCH"
-        check_no_conflicts
+        apply_patch_checked preflight
         python - <<'PY'
 import tomllib
 with open('pyproject.toml', 'rb') as f:
@@ -243,8 +281,7 @@ git switch -c "$BRANCH" "$BASE_BRANCH"
 echo "==> Created $BRANCH from $BASE_BRANCH"
 
 echo "==> Applying patch: $PATCH"
-git apply --3way "$PATCH"
-check_no_conflicts
+apply_patch_checked live
 run_verification "$VENV_PYTHON" "$HERMES_CLI"
 
 git add -A
