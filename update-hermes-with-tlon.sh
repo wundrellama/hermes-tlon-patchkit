@@ -141,14 +141,18 @@ check_clean
 if [ "$DRY_RUN" -eq 1 ]; then
     trap restore_original_branch_for_dry_run EXIT
     echo "==> Dry run: fetching origin and preflighting Tlon patch only; no update/apply/restart."
-    git fetch origin
+    if ! git fetch origin; then
+        echo "WARN: git fetch origin failed; continuing dry-run with existing local refs." >&2
+    fi
     if git show-ref --verify --quiet "refs/remotes/origin/$BASE_BRANCH"; then
         echo "==> Dry run: preflighting against origin/$BASE_BRANCH as well..."
+        dry_run_args=(--dry-run --base-ref "origin/$BASE_BRANCH")
+        [ "$RUN_TESTS" -eq 0 ] && dry_run_args+=(--no-tests)
         HERMES_HOME="$HERMES_HOME" \
         HERMES_AGENT="$HERMES_AGENT" \
         PATCH="$PATCH" \
         BRANCH="$BRANCH" \
-            bash "$APPLY_SCRIPT" --dry-run --base-ref "origin/$BASE_BRANCH"
+            bash "$APPLY_SCRIPT" "${dry_run_args[@]}"
     else
         run_apply_dry_run
     fi

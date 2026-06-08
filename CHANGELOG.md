@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Refreshed `tlon-pr.patch` against Hermes upstream `74239b494`, after upstream moved gateway slash-command handlers into `gateway/slash_commands.py`.
+- Fixed the disposable preflight worktree cleanup trap in `apply-tlon.sh`; failed preflights no longer leave stale `/tmp/hermes-tlon-preflight.*` worktrees or trip `verify_dir: unbound variable`.
+- `update-hermes-with-tlon.sh --dry-run --no-tests` now actually forwards `--no-tests` when preflighting against `origin/<base>`.
+- `update-hermes-with-tlon.sh --dry-run` now continues against existing local refs if `git fetch origin` fails, instead of aborting before the preflight can run.
+
 ## 0.1.0 - 2026-06-03
 
 Initial public patch-kit packaging.

@@ -33,6 +33,7 @@ BRANCH="${BRANCH:-tlon-apply}"
 RUN_TESTS=1
 DRY_RUN=0
 BASE_REF=""
+PREFLIGHT_WORKTREE=""
 
 usage() {
     cat <<EOF
@@ -73,6 +74,16 @@ fail() {
     echo "ERROR: $*" >&2
     exit 1
 }
+
+cleanup_preflight_worktree() {
+    if [ -n "${PREFLIGHT_WORKTREE:-}" ]; then
+        git -C "$HERMES_AGENT" worktree remove --force "$PREFLIGHT_WORKTREE" >/dev/null 2>&1 || true
+        rm -rf "$PREFLIGHT_WORKTREE" >/dev/null 2>&1 || true
+        PREFLIGHT_WORKTREE=""
+    fi
+}
+
+trap cleanup_preflight_worktree EXIT
 
 find_venv_python() {
     if [ -x "$HERMES_AGENT/venv/bin/python" ]; then
@@ -171,18 +182,12 @@ apply_patch_checked() {
 
 preflight_patch() {
     local base_branch="$1"
-    local verify_dir
-    verify_dir="$(mktemp -d /tmp/hermes-tlon-preflight.XXXXXX)"
-    cleanup_preflight() {
-        git -C "$HERMES_AGENT" worktree remove --force "$verify_dir" >/dev/null 2>&1 || true
-        rm -rf "$verify_dir" >/dev/null 2>&1 || true
-    }
-    trap cleanup_preflight EXIT
+    PREFLIGHT_WORKTREE="$(mktemp -d /tmp/hermes-tlon-preflight.XXXXXX)"
 
     echo "==> Preflighting patch in disposable worktree from $base_branch..."
-    git worktree add --detach "$verify_dir" "$base_branch" >/dev/null
+    git worktree add --detach "$PREFLIGHT_WORKTREE" "$base_branch" >/dev/null
     (
-        cd "$verify_dir"
+        cd "$PREFLIGHT_WORKTREE"
         apply_patch_checked preflight
         python - <<'PY'
 import tomllib
@@ -191,8 +196,7 @@ with open('pyproject.toml', 'rb') as f:
 print('  pyproject.toml parses OK')
 PY
     )
-    cleanup_preflight
-    trap - EXIT
+    cleanup_preflight_worktree
     echo "  patch preflight OK"
 }
 

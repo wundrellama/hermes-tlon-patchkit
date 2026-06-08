@@ -1,8 +1,8 @@
 diff --git a/agent/prompt_builder.py b/agent/prompt_builder.py
-index bf5d61528..2d20b03fb 100644
+index 26fcfaae3..95b5412ba 100644
 --- a/agent/prompt_builder.py
 +++ b/agent/prompt_builder.py
-@@ -495,6 +495,20 @@ PLATFORM_HINTS = {
+@@ -527,6 +527,20 @@ PLATFORM_HINTS = {
          "files arrive as downloadable documents. You can also include image "
          "URLs in markdown format ![alt](url) and they will be sent as photos."
      ),
@@ -24,7 +24,7 @@ index bf5d61528..2d20b03fb 100644
          "You are communicating via email. Write clear, well-structured responses "
          "suitable for email. Use plain text formatting (no markdown). "
 diff --git a/cron/scheduler.py b/cron/scheduler.py
-index d0240e9af..9153a87af 100644
+index f5c71ceed..e6a0bd386 100644
 --- a/cron/scheduler.py
 +++ b/cron/scheduler.py
 @@ -119,6 +119,7 @@ _KNOWN_DELIVERY_PLATFORMS = frozenset({
@@ -4105,10 +4105,10 @@ index 000000000..4dce5abdb
 +            result.append(item)
 +    return result
 diff --git a/gateway/run.py b/gateway/run.py
-index 40721eada..26a941a23 100644
+index 54b0b0ce7..61356e8e7 100644
 --- a/gateway/run.py
 +++ b/gateway/run.py
-@@ -3650,6 +3650,38 @@ class GatewayRunner:
+@@ -3763,6 +3763,38 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              except Exception as e:
                  logger.debug("Failed interrupting agent during shutdown: %s", e)
  
@@ -4147,7 +4147,7 @@ index 40721eada..26a941a23 100644
      async def _notify_active_sessions_of_shutdown(self) -> None:
          """Send shutdown/restart notifications to active chats and home channels.
  
-@@ -3701,13 +3733,6 @@ class GatewayRunner:
+@@ -3814,13 +3846,6 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  chat_id = _parsed["chat_id"]
                  thread_id = _parsed.get("thread_id")
  
@@ -4161,7 +4161,7 @@ index 40721eada..26a941a23 100644
              try:
                  platform = Platform(platform_str)
                  adapter = self.adapters.get(platform)
-@@ -3722,6 +3747,18 @@ class GatewayRunner:
+@@ -3835,6 +3860,18 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                      )
                      continue
  
@@ -4180,7 +4180,7 @@ index 40721eada..26a941a23 100644
                  reply_to_message_id = getattr(source, "message_id", None) if source is not None else None
                  if reply_to_message_id is None and restart_source is not None:
                      try:
-@@ -3735,19 +3772,19 @@ class GatewayRunner:
+@@ -3848,19 +3885,19 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
  
                  metadata = self._thread_metadata_for_target(
                      platform,
@@ -4204,7 +4204,7 @@ index 40721eada..26a941a23 100644
                          getattr(result, "error", "send returned success=False"),
                      )
                      continue
-@@ -3755,7 +3792,7 @@ class GatewayRunner:
+@@ -3868,7 +3905,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  notified.add(dedup_key)
                  logger.info(
                      "Sent shutdown notification to active chat %s:%s",
@@ -4213,7 +4213,7 @@ index 40721eada..26a941a23 100644
                  )
              except Exception as e:
                  logger.debug(
-@@ -3785,26 +3822,31 @@ class GatewayRunner:
+@@ -3898,26 +3935,31 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  )
                  continue
  
@@ -4251,7 +4251,7 @@ index 40721eada..26a941a23 100644
                          getattr(result, "error", "send returned success=False"),
                      )
                      continue
-@@ -3813,7 +3855,7 @@ class GatewayRunner:
+@@ -3926,7 +3968,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  logger.info(
                      "Sent shutdown notification to home channel %s:%s",
                      platform.value,
@@ -4260,7 +4260,7 @@ index 40721eada..26a941a23 100644
                  )
              except Exception as e:
                  logger.debug(
-@@ -4385,6 +4427,7 @@ class GatewayRunner:
+@@ -4498,6 +4540,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              "BLUEBUBBLES_ALLOWED_USERS",
              "QQ_ALLOWED_USERS",
              "YUANBAO_ALLOWED_USERS",
@@ -4268,7 +4268,7 @@ index 40721eada..26a941a23 100644
              "GATEWAY_ALLOWED_USERS",
          )
          _builtin_allow_all_vars = (
-@@ -4400,6 +4443,7 @@ class GatewayRunner:
+@@ -4513,6 +4556,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              "BLUEBUBBLES_ALLOW_ALL_USERS",
              "QQ_ALLOW_ALL_USERS",
              "YUANBAO_ALLOW_ALL_USERS",
@@ -4276,7 +4276,7 @@ index 40721eada..26a941a23 100644
          )
          # Also pick up plugin-registered platforms — each entry can declare
          # its own allowed_users_env / allow_all_env, so the warning stays
-@@ -6985,6 +7029,13 @@ class GatewayRunner:
+@@ -6075,6 +6119,13 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  return None
              return YuanbaoAdapter(config)
  
@@ -4290,7 +4290,7 @@ index 40721eada..26a941a23 100644
          return None
  
      def _adapter_enforces_own_access_policy(self, platform: Optional[Platform]) -> bool:
-@@ -7111,6 +7162,7 @@ class GatewayRunner:
+@@ -6201,6 +6252,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOWED_USERS",
              Platform.QQBOT: "QQ_ALLOWED_USERS",
              Platform.YUANBAO: "YUANBAO_ALLOWED_USERS",
@@ -4298,7 +4298,7 @@ index 40721eada..26a941a23 100644
          }
          platform_group_user_env_map = {
              Platform.TELEGRAM: "TELEGRAM_GROUP_ALLOWED_USERS",
-@@ -7137,6 +7189,7 @@ class GatewayRunner:
+@@ -6227,6 +6279,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOW_ALL_USERS",
              Platform.QQBOT: "QQ_ALLOW_ALL_USERS",
              Platform.YUANBAO: "YUANBAO_ALLOW_ALL_USERS",
@@ -4306,7 +4306,7 @@ index 40721eada..26a941a23 100644
          }
          # Bots admitted by {PLATFORM}_ALLOW_BOTS bypass the human allowlist (#4466).
          platform_allow_bots_map = {
-@@ -7346,6 +7399,7 @@ class GatewayRunner:
+@@ -6451,6 +6504,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  Platform.WEIXIN:   "WEIXIN_ALLOWED_USERS",
                  Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOWED_USERS",
                  Platform.QQBOT:    "QQ_ALLOWED_USERS",
@@ -4314,55 +4314,15 @@ index 40721eada..26a941a23 100644
              }
              platform_group_env_map = {
                  Platform.TELEGRAM: (
-@@ -14914,6 +14968,7 @@ class GatewayRunner:
-         Platform.SIGNAL, Platform.MATTERMOST, Platform.MATRIX,
-         Platform.HOMEASSISTANT, Platform.EMAIL, Platform.SMS, Platform.DINGTALK,
+@@ -11065,6 +11119,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
+         Platform.SIGNAL, Platform.MATRIX,
+         Platform.EMAIL, Platform.SMS, Platform.DINGTALK,
          Platform.FEISHU, Platform.WECOM, Platform.WECOM_CALLBACK, Platform.WEIXIN, Platform.BLUEBUBBLES, Platform.QQBOT, Platform.LOCAL,
 +        Platform.TLON,
      })
  
-     async def _handle_debug_command(self, event: MessageEvent) -> str:
-@@ -14960,7 +15015,7 @@ class GatewayRunner:
  
-         return await loop.run_in_executor(None, _collect_and_upload)
- 
--    async def _handle_update_command(self, event: MessageEvent) -> str:
-+    async def _handle_update_command(self, event: MessageEvent) -> Optional[str]:
-         """Handle /update command — update Hermes Agent to the latest version.
- 
-         Spawns ``hermes update`` in a detached session (via ``setsid``) so it
-@@ -15111,7 +15166,29 @@ class GatewayRunner:
-             return t("gateway.update.start_failed", error=e)
- 
-         self._schedule_update_notification_watch()
--        return t("gateway.update.starting")
-+        start_message = t("gateway.update.starting")
-+        if event.source.platform == Platform.TLON:
-+            adapter = self.adapters.get(Platform.TLON)
-+            if not adapter:
-+                return None
-+            target = self._status_notification_target(
-+                Platform.TLON,
-+                adapter,
-+                event.source.chat_id,
-+                event.source.thread_id,
-+            )
-+            if target is None:
-+                return None
-+            target_chat_id, target_thread_id = target
-+            source_thread_id = str(event.source.thread_id) if event.source.thread_id else None
-+            if target_chat_id != str(event.source.chat_id) or target_thread_id != source_thread_id:
-+                metadata = {"thread_id": target_thread_id} if target_thread_id else None
-+                try:
-+                    await adapter.send(target_chat_id, start_message, metadata=metadata)
-+                except Exception as exc:
-+                    logger.warning("Tlon update start notification failed: %s", exc)
-+                return None
-+        return start_message
- 
-     def _schedule_update_notification_watch(self) -> None:
-         """Ensure a background task is watching for update completion."""
-@@ -15154,6 +15231,7 @@ class GatewayRunner:
+@@ -11110,6 +11165,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
          chat_id = None
          session_key = None
          metadata = None
@@ -4370,7 +4330,7 @@ index 40721eada..26a941a23 100644
          for path in (claimed_path, pending_path):
              if path.exists():
                  try:
-@@ -15161,6 +15239,7 @@ class GatewayRunner:
+@@ -11117,6 +11173,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                      platform_str = pending.get("platform")
                      chat_id = pending.get("chat_id")
                      chat_type = pending.get("chat_type")
@@ -4378,7 +4338,7 @@ index 40721eada..26a941a23 100644
                      session_key = pending.get("session_key")
                      thread_id = pending.get("thread_id")
                      message_id = pending.get("message_id")
-@@ -15178,6 +15257,38 @@ class GatewayRunner:
+@@ -11134,6 +11191,38 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                          # Fallback session key if not stored (old pending files)
                          if not session_key:
                              session_key = f"{platform_str}:{chat_id}"
@@ -4417,7 +4377,7 @@ index 40721eada..26a941a23 100644
                      break
                  except Exception:
                      pass
-@@ -15263,7 +15374,8 @@ class GatewayRunner:
+@@ -11219,7 +11308,8 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                            exit_code_path, prompt_path):
                      p.unlink(missing_ok=True)
                  (_hermes_home / ".update_response").unlink(missing_ok=True)
@@ -4427,7 +4387,7 @@ index 40721eada..26a941a23 100644
                  return
  
              # Check for new output
-@@ -15285,7 +15397,10 @@ class GatewayRunner:
+@@ -11241,7 +11331,10 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              # watcher would re-read the same .update_prompt.json every poll
              # cycle and spam the user with duplicate prompt messages.
              if (prompt_path.exists() and session_key
@@ -4439,7 +4399,7 @@ index 40721eada..26a941a23 100644
                  try:
                      prompt_data = json.loads(prompt_path.read_text())
                      prompt_text = prompt_data.get("prompt", "")
-@@ -15323,7 +15438,8 @@ class GatewayRunner:
+@@ -11279,7 +11372,8 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                          # next watcher can recover by re-forwarding it from
                          # disk. Duplicate sends in the same process are
                          # still suppressed by _update_prompt_pending.
@@ -4449,7 +4409,7 @@ index 40721eada..26a941a23 100644
                          # .update_response to continue — it doesn't re-check
                          logger.info("Forwarded update prompt to %s: %s", session_key, prompt_text[:80])
                  except (json.JSONDecodeError, OSError) as e:
-@@ -15348,7 +15464,8 @@ class GatewayRunner:
+@@ -11304,7 +11398,8 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                        exit_code_path, prompt_path):
                  p.unlink(missing_ok=True)
              (_hermes_home / ".update_response").unlink(missing_ok=True)
@@ -4459,7 +4419,7 @@ index 40721eada..26a941a23 100644
  
      async def _send_update_notification(self) -> bool:
          """If an update finished, notify the user.
-@@ -15425,10 +15542,14 @@ class GatewayRunner:
+@@ -11381,10 +11476,14 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  return False
  
              if adapter and chat_id:
@@ -4476,7 +4436,7 @@ index 40721eada..26a941a23 100644
                      chat_type=chat_type,
                      reply_to_message_id=message_id,
                      adapter=adapter,
-@@ -15446,11 +15567,11 @@ class GatewayRunner:
+@@ -11402,11 +11501,11 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                      msg = "✅ Hermes update finished successfully."
                  else:
                      msg = "❌ Hermes update failed. Check the gateway logs or run `hermes update` manually for details."
@@ -4490,7 +4450,7 @@ index 40721eada..26a941a23 100644
                      exit_code,
                  )
          except Exception as e:
-@@ -15498,16 +15619,21 @@ class GatewayRunner:
+@@ -11454,16 +11553,21 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  )
                  return None
  
@@ -4515,7 +4475,7 @@ index 40721eada..26a941a23 100644
                  "♻ Gateway restarted successfully. Your session continues.",
                  metadata=metadata,
              )
-@@ -15519,7 +15645,7 @@ class GatewayRunner:
+@@ -11475,7 +11579,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  logger.warning(
                      "Restart notification to %s:%s was not delivered: %s",
                      platform_str,
@@ -4524,7 +4484,7 @@ index 40721eada..26a941a23 100644
                      getattr(result, "error", "send returned success=False"),
                  )
                  return None
-@@ -15527,9 +15653,9 @@ class GatewayRunner:
+@@ -11483,9 +11587,9 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
              logger.info(
                  "Sent restart notification to %s:%s",
                  platform_str,
@@ -4536,7 +4496,7 @@ index 40721eada..26a941a23 100644
          except Exception as e:
              logger.warning("Restart notification failed: %s", e)
              return None
-@@ -15564,26 +15690,31 @@ class GatewayRunner:
+@@ -11520,26 +11624,31 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  )
                  continue
  
@@ -4574,7 +4534,7 @@ index 40721eada..26a941a23 100644
                          getattr(result, "error", "send returned success=False"),
                      )
                      continue
-@@ -15592,7 +15723,7 @@ class GatewayRunner:
+@@ -11548,7 +11657,7 @@ class GatewayRunner(GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
                  logger.info(
                      "Sent home-channel startup notification to %s:%s",
                      platform.value,
@@ -4584,7 +4544,7 @@ index 40721eada..26a941a23 100644
              except Exception as exc:
                  logger.warning(
 diff --git a/gateway/session.py b/gateway/session.py
-index 4d3f4f42f..c3361cb70 100644
+index 4d1d26b64..cd7a472a1 100644
 --- a/gateway/session.py
 +++ b/gateway/session.py
 @@ -373,6 +373,19 @@ def build_session_context_prompt(
@@ -4607,11 +4567,52 @@ index 4d3f4f42f..c3361cb70 100644
  
      # Connected platforms
      platforms_list = ["local (files on this machine)"]
+diff --git a/gateway/slash_commands.py b/gateway/slash_commands.py
+index b502a1e89..f2ce04b73 100644
+--- a/gateway/slash_commands.py
++++ b/gateway/slash_commands.py
+@@ -3238,7 +3238,7 @@ class GatewaySlashCommandsMixin:
+ 
+         return await loop.run_in_executor(None, _collect_and_upload)
+ 
+-    async def _handle_update_command(self, event: MessageEvent) -> str:
++    async def _handle_update_command(self, event: MessageEvent) -> Optional[str]:
+         """Handle /update command — update Hermes Agent to the latest version.
+ 
+         Spawns ``hermes update`` in a detached session (via ``setsid``) so it
+@@ -3390,4 +3390,26 @@ class GatewaySlashCommandsMixin:
+             return t("gateway.update.start_failed", error=e)
+ 
+         self._schedule_update_notification_watch()
+-        return t("gateway.update.starting")
++        start_message = t("gateway.update.starting")
++        if event.source.platform == Platform.TLON:
++            adapter = self.adapters.get(Platform.TLON)
++            if not adapter:
++                return None
++            target = self._status_notification_target(
++                Platform.TLON,
++                adapter,
++                event.source.chat_id,
++                event.source.thread_id,
++            )
++            if target is None:
++                return None
++            target_chat_id, target_thread_id = target
++            source_thread_id = str(event.source.thread_id) if event.source.thread_id else None
++            if target_chat_id != str(event.source.chat_id) or target_thread_id != source_thread_id:
++                metadata = {"thread_id": target_thread_id} if target_thread_id else None
++                try:
++                    await adapter.send(target_chat_id, start_message, metadata=metadata)
++                except Exception as exc:
++                    logger.warning("Tlon update start notification failed: %s", exc)
++                return None
++        return start_message
 diff --git a/hermes_cli/gateway.py b/hermes_cli/gateway.py
-index c857ae71f..6b776dc96 100644
+index 5ff742591..7c55ff8ec 100644
 --- a/hermes_cli/gateway.py
 +++ b/hermes_cli/gateway.py
-@@ -4181,6 +4181,33 @@ _PLATFORMS = [
+@@ -4398,6 +4398,33 @@ _PLATFORMS = [
              },
          ],
      },
@@ -4658,10 +4659,10 @@ index 71c50ba12..a24fd093e 100644
  
      for name, (token_var, home_var) in platforms.items():
 diff --git a/pyproject.toml b/pyproject.toml
-index 2b12246e0..899d7041a 100644
+index fcfd8d773..7262da4c4 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -111,10 +111,10 @@ modal = ["modal==1.3.4"]
+@@ -119,10 +119,10 @@ modal = ["modal==1.3.4"]
  daytona = ["daytona==0.155.0"]
  hindsight = ["hindsight-client==0.6.1"]
  dev = ["debugpy==1.8.20", "pytest==9.0.2", "pytest-asyncio==1.3.0", "pytest-timeout==2.4.0", "mcp==1.26.0", "starlette==1.0.1", "ty==0.0.21", "ruff==0.15.10", "setuptools==82.0.1"]  # starlette: CVE-2026-48710
@@ -4675,7 +4676,7 @@ index 2b12246e0..899d7041a 100644
  # WeCom callback-mode adapter — parses untrusted XML POST bodies from
  # WeCom-controlled callback endpoints, so we use defusedxml (drop-in
  # replacement for stdlib xml.etree.ElementTree) to block billion-laughs
-@@ -154,8 +154,8 @@ vision = ["Pillow==12.2.0"]
+@@ -160,8 +160,8 @@ vision = []
  # a vulnerable pre-1.0.1 transitive. Bump in lockstep with uv.lock.
  mcp = ["mcp==1.26.0", "starlette==1.0.1"]  # starlette: CVE-2026-48710
  nemo-relay = ["nemo-relay==0.3"]
@@ -4687,7 +4688,7 @@ index 2b12246e0..899d7041a 100644
  # The cua-driver binary itself is installed via `hermes tools` post-setup
  # (curl install script); this extra just pins the MCP client used to talk
 diff --git a/tests/gateway/test_restart_drain.py b/tests/gateway/test_restart_drain.py
-index c1578e361..dcce377f8 100644
+index a48e5f737..4f191b02c 100644
 --- a/tests/gateway/test_restart_drain.py
 +++ b/tests/gateway/test_restart_drain.py
 @@ -14,6 +14,16 @@ from gateway.session import SessionEntry, build_session_key
@@ -4707,7 +4708,7 @@ index c1578e361..dcce377f8 100644
  @pytest.mark.asyncio
  async def test_restart_command_while_busy_requests_drain_without_interrupt(monkeypatch):
      # Ensure INVOCATION_ID is NOT set — systemd sets this in service mode,
-@@ -345,3 +355,55 @@ async def test_shutdown_notification_uses_persisted_origin_for_colon_ids():
+@@ -360,3 +370,55 @@ async def test_shutdown_notification_uses_persisted_origin_for_colon_ids():
  
      assert adapter.send.await_count == 1
      assert adapter.send.await_args.args[0] == "!room123:example.org"
@@ -4764,7 +4765,7 @@ index c1578e361..dcce377f8 100644
 +
 +    assert adapter.sent_calls == []
 diff --git a/tests/gateway/test_restart_notification.py b/tests/gateway/test_restart_notification.py
-index 0f0dadc42..8b10a8862 100644
+index b090503c5..e5a41f1ff 100644
 --- a/tests/gateway/test_restart_notification.py
 +++ b/tests/gateway/test_restart_notification.py
 @@ -16,6 +16,16 @@ from tests.gateway.restart_test_helpers import (
@@ -4784,7 +4785,7 @@ index 0f0dadc42..8b10a8862 100644
  # ── restart marker helpers ───────────────────────────────────────────────
  
  
-@@ -424,6 +434,48 @@ async def test_send_restart_notification_with_thread(tmp_path, monkeypatch):
+@@ -428,6 +438,48 @@ async def test_send_restart_notification_with_thread(tmp_path, monkeypatch):
      assert not notify_path.exists()
  
  
@@ -4834,7 +4835,7 @@ index 0f0dadc42..8b10a8862 100644
  async def test_send_restart_notification_noop_when_no_file(tmp_path, monkeypatch):
      """Nothing happens if there's no pending restart notification."""
 diff --git a/tests/gateway/test_session.py b/tests/gateway/test_session.py
-index 6e2c39f79..3d72eb769 100644
+index 9b5fff642..584cbb360 100644
 --- a/tests/gateway/test_session.py
 +++ b/tests/gateway/test_session.py
 @@ -213,6 +213,29 @@ class TestBuildSessionContextPrompt:
@@ -5978,10 +5979,10 @@ index 000000000..5847950e6
 +        "two",
 +    ]
 diff --git a/tests/gateway/test_update_command.py b/tests/gateway/test_update_command.py
-index 64998771d..1d809c77f 100644
+index fa223a42f..8613e50fe 100644
 --- a/tests/gateway/test_update_command.py
 +++ b/tests/gateway/test_update_command.py
-@@ -496,6 +496,36 @@ class TestSendUpdateNotification:
+@@ -645,6 +645,36 @@ class TestSendUpdateNotification:
              "telegram_reply_to_message_id": "m-update-thread",
          }
  
@@ -6076,10 +6077,10 @@ index 1773d281a..a0fe19d73 100644
 +        assert "tlon" in resolve_toolset("hermes-tlon")
 +        assert "tlon" in resolve_toolset("hermes-tlon-safe")
 diff --git a/tests/tools/test_send_message_tool.py b/tests/tools/test_send_message_tool.py
-index 56b196a47..ee0704847 100644
+index 63f45e1e7..f0b6e0da9 100644
 --- a/tests/tools/test_send_message_tool.py
 +++ b/tests/tools/test_send_message_tool.py
-@@ -1095,6 +1095,34 @@ class TestParseTargetRefDiscord:
+@@ -1137,6 +1137,34 @@ class TestParseTargetRefDiscord:
          assert is_explicit is True
  
  
@@ -6485,7 +6486,7 @@ index 000000000..f64adb2fc
 +        "json": {"add": {"name": "Auto React", "src": ":: hook source"}},
 +    }
 diff --git a/tools/send_message_tool.py b/tools/send_message_tool.py
-index f8386a51e..85eb3a028 100644
+index 836080443..6809627df 100644
 --- a/tools/send_message_tool.py
 +++ b/tools/send_message_tool.py
 @@ -12,6 +12,7 @@ import os
@@ -6518,7 +6519,7 @@ index f8386a51e..85eb3a028 100644
      if platform_name == "telegram":
          match = _TELEGRAM_TOPIC_TARGET_RE.fullmatch(target_ref)
          if match:
-@@ -792,6 +801,8 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
+@@ -804,6 +813,8 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
              result = await _send_qqbot(pconfig, chat_id, chunk)
          elif platform == Platform.YUANBAO:
              result = await _send_yuanbao(chat_id, chunk)
@@ -6527,7 +6528,7 @@ index f8386a51e..85eb3a028 100644
          else:
              # Plugin platform: route through the gateway's live adapter if
              # available, otherwise the plugin's standalone_sender_fn.
-@@ -1662,6 +1673,175 @@ async def _send_feishu(pconfig, chat_id, message, media_files=None, thread_id=No
+@@ -1651,6 +1662,175 @@ async def _send_feishu(pconfig, chat_id, message, media_files=None, thread_id=No
          return _error(f"Feishu send failed: {e}")
  
  
@@ -9101,7 +9102,7 @@ index 10c5dbb0c..bcef20d47 100644
  }
  
 diff --git a/website/docs/user-guide/messaging/index.md b/website/docs/user-guide/messaging/index.md
-index ff4062854..84235d9dc 100644
+index c8a6b4a70..097b161df 100644
 --- a/website/docs/user-guide/messaging/index.md
 +++ b/website/docs/user-guide/messaging/index.md
 @@ -1,12 +1,12 @@
@@ -9126,7 +9127,7 @@ index ff4062854..84235d9dc 100644
 +| Tlon | — | ✅ | ✅ | ✅ | ✅ | — | — |
  | DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |
  | Feishu/Lark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
- | WeCom | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |
+ | WeCom | ✅ | ✅ | ✅ | — | — | — | — |
 diff --git a/website/docs/user-guide/messaging/tlon.md b/website/docs/user-guide/messaging/tlon.md
 new file mode 100644
 index 000000000..ed35db996
