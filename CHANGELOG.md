@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.1.2 - 2026-06-12
+
+### Fixed
+
+- Refreshed `tlon-pr.patch` against Hermes upstream `d810f2b26`, preserving upstream's new `WHATSAPP_CLOUD_HOME_CHANNEL` cron delivery mapping alongside the Tlon `TLON_HOME_CHANNEL` mapping.
+
+## 0.1.1 - 2026-06-09
+
 ### Fixed
 
 - Refreshed `tlon-pr.patch` against Hermes upstream `74239b494`, after upstream moved gateway slash-command handlers into `gateway/slash_commands.py`.
