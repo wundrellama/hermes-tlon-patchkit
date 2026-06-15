@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.3 - 2026-06-15
+
+### Fixed
+
+- Refreshed `tlon-pr.patch` against Hermes upstream `ed20f5ed0`, preserving upstream's latest `pyproject.toml` dev dependency pins while keeping the Tlon-required `aiohttp==3.13.5` pins across messaging-related extras.
+
 ## 0.1.2 - 2026-06-12
 
 ### Fixed
