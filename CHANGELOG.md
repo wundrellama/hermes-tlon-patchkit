@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.2.3 - 2026-06-18
+
+### Fixed
+
+- Corrected Tlon DM/channel writ ID generation: `_format_urbit_da_decimal_from_unix_millis()` now converts Unix milliseconds to Urbit `@da` decimal units with microsecond-scale division (`1_000_000`) instead of `1000`, preventing malformed future-looking writ IDs such as the observed `170.141.217.343...` family.
+- Updated DM and channel `chat-dm-action-2` / `channel-action-2` regression expectations to the valid `170.141.184.508...` ID family.
+
+### Verified
+
+- Live patched Hermes checkout passed focused Tlon API tests via `python -m unittest plugins.platforms.tlon.test_tlon_api -v` → `28 tests OK`.
+- Regenerated `tlon-pr.patch` from Hermes `origin/main` with the timestamp fix included.
+
 ## 0.2.2 - 2026-06-18
 
 ### Fixed
