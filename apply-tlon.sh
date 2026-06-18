@@ -34,6 +34,11 @@ RUN_TESTS=1
 DRY_RUN=0
 BASE_REF=""
 PREFLIGHT_WORKTREE=""
+TLON_BUILD_CLI="${TLON_BUILD_CLI:-1}"
+TLON_APPS_REPO="${TLON_APPS_REPO:-https://github.com/tloncorp/tlon-apps.git}"
+TLON_APPS_REF="${TLON_APPS_REF:-77d6286aff52ca72ccc9003fce5dff46a844818d}"
+TLON_APPS_DIR="${TLON_APPS_DIR:-}"
+TLON_CLI_DEST="${TLON_CLI_DEST:-}"
 
 usage() {
     cat <<EOF
@@ -44,11 +49,17 @@ Environment overrides:
   HERMES_AGENT   Hermes source checkout (default: \$HERMES_HOME/hermes-agent)
   PATCH          Tlon patch file (default: script directory/tlon-pr.patch)
   BRANCH         Patch branch name (default: tlon-apply)
+  TLON_BUILD_CLI Build/pin monorepo tlon CLI after patch (1/0, default: 1)
+  TLON_APPS_REPO tlon-apps Git URL (default: https://github.com/tloncorp/tlon-apps.git)
+  TLON_APPS_REF  tlon-apps ref/commit to build (default: known-good public commit)
+  TLON_APPS_DIR  Existing tlon-apps checkout to use instead of cloning (optional)
+  TLON_CLI_DEST  Destination for built CLI (default: \$HERMES_HOME/bin/tlon-monorepo-<version>-<sha>)
 
 Options:
   --dry-run       Preflight only; do not modify the live checkout.
   --base-ref REF  Dry-run/preflight against REF, e.g. origin/main.
   --no-tests      Skip focused pytest checks after applying.
+  --no-cli-build  Skip monorepo tlon CLI build/pin step.
 EOF
 }
 
@@ -56,6 +67,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         --dry-run) DRY_RUN=1 ;;
         --no-tests) RUN_TESTS=0 ;;
+        --no-cli-build) TLON_BUILD_CLI=0 ;;
         --base-ref)
             if [ "$#" -lt 2 ]; then
                 echo "ERROR: --base-ref requires an argument" >&2
@@ -200,6 +212,100 @@ PY
     echo "  patch preflight OK"
 }
 
+
+update_env_tlon_cli() {
+    local env_file="$1"
+    local cli_path="$2"
+
+    mkdir -p "$(dirname "$env_file")"
+    ENV_FILE="$env_file" TLON_CLI_PATH="$cli_path" python3 - <<'PY'
+from pathlib import Path
+import os
+path = Path(os.environ['ENV_FILE'])
+cli = os.environ['TLON_CLI_PATH']
+text = path.read_text() if path.exists() else ''
+lines = text.splitlines()
+out = []
+seen = False
+for line in lines:
+    if line.startswith('TLON_CLI='):
+        if not seen:
+            out.append(f'TLON_CLI={cli}')
+            seen = True
+        # Drop duplicate TLON_CLI entries.
+    else:
+        out.append(line)
+if not seen:
+    out.append(f'TLON_CLI={cli}')
+path.write_text('\n'.join(out) + '\n')
+PY
+}
+
+build_and_pin_monorepo_tlon_cli() {
+    if [ "$TLON_BUILD_CLI" = "0" ]; then
+        echo "==> Skipping monorepo tlon CLI build/pin (TLON_BUILD_CLI=0)."
+        return 0
+    fi
+
+    echo "==> Building monorepo tlon CLI from tlon-apps..."
+    command -v git >/dev/null 2>&1 || fail "git is required to fetch tlon-apps"
+    command -v node >/dev/null 2>&1 || fail "node is required to build the monorepo tlon CLI"
+    command -v npm >/dev/null 2>&1 || fail "npm is required to fetch pnpm/bun for the monorepo tlon CLI build"
+
+    local workdir=""
+    local apps_dir=""
+    local cleanup_apps=0
+    if [ -n "$TLON_APPS_DIR" ]; then
+        apps_dir="$TLON_APPS_DIR"
+        [ -e "$apps_dir/.git" ] || fail "TLON_APPS_DIR is not a git checkout: $apps_dir"
+    else
+        workdir="$(mktemp -d /tmp/hermes-tlon-apps.XXXXXX)"
+        apps_dir="$workdir/tlon-apps"
+        cleanup_apps=1
+        echo "  cloning $TLON_APPS_REPO"
+        git clone "$TLON_APPS_REPO" "$apps_dir" >/dev/null
+    fi
+
+    (
+        cd "$apps_dir"
+        git checkout "$TLON_APPS_REF" >/dev/null
+        short_sha="$(git rev-parse --short HEAD)"
+        version="$(node -p "require('./packages/tlon-skill/package.json').version")"
+        echo "  tlon-apps ref: $(git rev-parse --short HEAD)"
+        echo "  tlon-skill version: $version"
+
+        # Use npm exec so the patchkit does not require global pnpm/bun installs.
+        # --script-shell works around npm configs that contain shell expressions.
+        npm --script-shell=/bin/bash exec --yes --package pnpm@9.0.5 -- pnpm install --frozen-lockfile
+
+        cd packages/tlon-skill
+        mkdir -p dist
+        npm --script-shell=/bin/bash exec --yes --package bun -- bun build scripts/main.ts \
+            --compile \
+            --target=bun-linux-x64 \
+            --outfile dist/tlon \
+            --define "__VERSION__=\"${version}-monorepo-${short_sha}\""
+        chmod +x dist/tlon
+        ./dist/tlon --version
+        ./dist/tlon posts --help | grep -q 'send <channel> \[message\]' || fail "built tlon CLI lacks posts send"
+
+        if [ -n "$TLON_CLI_DEST" ]; then
+            dest="$TLON_CLI_DEST"
+        else
+            dest="$HERMES_HOME/bin/tlon-monorepo-${version}-${short_sha}"
+        fi
+        mkdir -p "$(dirname "$dest")"
+        install -m 0755 dist/tlon "$dest"
+        update_env_tlon_cli "$HERMES_HOME/.env" "$dest"
+        echo "  installed: $dest"
+        echo "  updated:   $HERMES_HOME/.env (TLON_CLI only; credentials untouched)"
+    )
+
+    if [ "$cleanup_apps" -eq 1 ]; then
+        rm -rf "$workdir"
+    fi
+}
+
 run_verification() {
     local venv_python="$1"
     local hermes_cli="$2"
@@ -286,6 +392,7 @@ echo "==> Created $BRANCH from $BASE_BRANCH"
 echo "==> Applying patch: $PATCH"
 apply_patch_checked live
 run_verification "$VENV_PYTHON" "$HERMES_CLI"
+build_and_pin_monorepo_tlon_cli
 
 git add -A
 git commit -m "chore: reapply Tlon platform plugin patch"

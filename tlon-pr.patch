@@ -7,15 +7,15 @@ index 000000000..6ba83316d
 +# Copy this file to .env before running `pnpm dev`.
 +
 +# Tlon node credentials.
-+TLON_NODE_URL=https://your-node.tlon.network
-+TLON_NODE_ID=~your-node
-+TLON_ACCESS_CODE=your-access-code
++TLON_NODE_URL=https://example.invalid
++TLON_NODE_ID=~sampel-palnet
++TLON_ACCESS_CODE=
 +
 +# Full channel nests to monitor. Group messages dispatch when they mention the
 +# bot node id, bare node id, profile nickname, or one of TLON_BOT_MENTIONS.
 +TLON_CHANNELS=chat/~host/channel
 +# Explicit owner for home-channel defaults and gateway-status ownership.
-+TLON_OWNER_SHIP=~your-human-ship
++TLON_OWNER_SHIP=~sampel-palnet
 +# Optional override for cron/cross-platform delivery. When unset, Hermes uses
 +# TLON_OWNER_SHIP as the owner DM.
 +TLON_HOME_CHANNEL=
@@ -192,9 +192,9 @@ index 000000000..675d99ad2
 +Required:
 +
 +```bash
-+TLON_NODE_URL=https://your-node.tlon.network
-+TLON_NODE_ID=~your-node
-+TLON_ACCESS_CODE=your-access-code
++TLON_NODE_URL=https://example.invalid
++TLON_NODE_ID=~sampel-palnet
++TLON_ACCESS_CODE=
 +```
 +
 +Optional:
@@ -4988,7 +4988,7 @@ index 000000000..550f804f6
 +  - post_api_request
 +requires_env:
 +  - name: TLON_NODE_URL
-+    description: 'Node URL, for example https://sampel-palnet.tlon.network'
++    description: 'Node URL, for example https://example.invalid'
 +    prompt: 'Tlon node URL'
 +    password: false
 +  - name: TLON_NODE_ID

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.2.4 - 2026-06-18
+
+### Fixed
+
+- Added a portable monorepo `@tloncorp/tlon-skill` CLI build/pin step because published standalone CLI builds can reject `tlon posts send` even when the monorepo implementation supports it.
+- `apply-tlon.sh` now builds the CLI from a fixed public `tlon-apps` ref, installs it under `$HERMES_HOME/bin/`, and updates only `TLON_CLI` in `$HERMES_HOME/.env`; credentials and ship-specific values are not written or templated.
+- Added `--no-cli-build` / `TLON_BUILD_CLI=0` for users who already manage their own compatible `tlon` binary.
+
+### Privacy
+
+- Scrubbed release notes that mentioned a real recipient ship; live-send verification is now described generically.
+
 ## 0.2.3 - 2026-06-18
 
 ### Fixed
@@ -38,7 +50,7 @@
 
 - Focused Tlon plugin tests passed in the live Hermes checkout: `360 passed, 21 subtests passed`.
 - Refreshed `tlon-pr.patch` applied cleanly in a disposable worktree from Hermes `main` `426f321e8`; the new DM regression passed there.
-- Live patched `TlonCLI.send_message("~dinnyt-divsud", ...)` delivered a real DM, verified by Tlon message search.
+- Live patched `TlonCLI.send_message("~ship", ...)` delivered a real DM, verified by Tlon message search.
 
 ## 0.2.0 - 2026-06-18
 

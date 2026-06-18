@@ -72,6 +72,8 @@ There are two scripts because they have different jobs:
 
 The patch file itself, `tlon-pr.patch`, is the source delta: "given upstream Hermes, add the current Tlon platform plugin package and keep the known-good `aiohttp==3.13.5` pin." It is intentionally dumb. The scripts provide the guardrails.
 
+Current published Tlon CLI builds may lag the monorepo and reject `tlon posts send` even when the monorepo implementation supports it. To keep outbound Hermes delivery portable, `apply-tlon.sh` also builds the monorepo `@tloncorp/tlon-skill` CLI from a fixed public `tlon-apps` ref and pins `TLON_CLI` in `$HERMES_HOME/.env`. It only writes the CLI path; it does not write ship names, URLs, auth cookies, access codes, or any other credentials.
+
 The important invariant is:
 
 ```text
@@ -85,7 +87,7 @@ Do not let `hermes update` try to carry the Tlon patch through the update automa
 | File | Purpose |
 | --- | --- |
 | `update-hermes-with-tlon.sh` | Recommended wrapper: update Hermes from a clean upstream branch, then safely reapply Tlon. |
-| `apply-tlon.sh` | Safely applies `tlon-pr.patch` to a Hermes checkout. |
+| `apply-tlon.sh` | Safely applies `tlon-pr.patch` to a Hermes checkout and, by default, builds/pins the monorepo `tlon` CLI for outbound sends. |
 | `tlon-pr.patch` | Reusable patch containing the Tlon platform plugin package from `tloncorp/tlon-apps` plus the local `aiohttp==3.13.5` pin. |
 | `VERSION` | Package version. |
 | `CHANGELOG.md` | Release history. |
@@ -102,6 +104,7 @@ Do not let `hermes update` try to carry the Tlon patch through the update automa
   - `$HERMES_AGENT/.venv`
 - `uv` or `pip` available for installing/pinning `aiohttp==3.13.5`
 - `pytest` available in the Hermes venv for full focused-test verification
+- Node.js and npm if using the default monorepo `tlon` CLI build/pin step
 
 ## Recommended Usage
 
@@ -140,6 +143,11 @@ HERMES_HOME=${HERMES_HOME:-$HOME/.hermes}
 HERMES_AGENT=${HERMES_AGENT:-$HERMES_HOME/hermes-agent}
 PATCH=${PATCH:-<script-dir>/tlon-pr.patch}
 BRANCH=${BRANCH:-tlon-apply}
+TLON_BUILD_CLI=${TLON_BUILD_CLI:-1}
+TLON_APPS_REPO=${TLON_APPS_REPO:-https://github.com/tloncorp/tlon-apps.git}
+TLON_APPS_REF=${TLON_APPS_REF:-77d6286aff52ca72ccc9003fce5dff46a844818d}
+TLON_APPS_DIR=${TLON_APPS_DIR:-}       # optional existing tlon-apps checkout
+TLON_CLI_DEST=${TLON_CLI_DEST:-}       # optional explicit built CLI path
 ```
 
 Examples:
@@ -162,6 +170,9 @@ If you do not want to run `hermes update`, you can use the apply script directly
 bash ./apply-tlon.sh --dry-run
 bash ./apply-tlon.sh --dry-run --base-ref origin/main
 bash ./apply-tlon.sh
+
+# If you already provide a known-good tlon CLI yourself:
+bash ./apply-tlon.sh --no-cli-build
 ```
 
 ## Safety Model
@@ -190,6 +201,7 @@ The scripts are designed to fail before damaging the live Hermes checkout.
 - import-checks Tlon modules
 - verifies the Hermes CLI starts
 - runs focused pytest checks unless `--no-tests` is passed
+- builds/pins the monorepo `tlon` CLI unless `--no-cli-build` or `TLON_BUILD_CLI=0` is used
 - commits only after verification passes
 
 ## Failure Guidance
@@ -242,11 +254,4 @@ Do not let `hermes update` restore local Tlon changes automatically. Update clea
 
 This repository does not include Tlon credentials or Hermes runtime config.
 
-The target machine still needs its own Hermes `.env` values, for example:
-
-```bash
-TLON_SHIP_URL=...
-TLON_SHIP_NAME=...
-TLON_SHIP_CODE=...
-TLON_OWNER_SHIP=...
-```
+The target machine still needs its own Hermes `.env` values. This patchkit intentionally does **not** template or ship those values. Configure them with `hermes gateway setup` or your own private `.env`; keep node URLs, ship names, access codes, and cookies out of this repository.

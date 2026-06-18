@@ -25,10 +25,15 @@ BRANCH="${BRANCH:-tlon-apply}"
 RESTART_GATEWAY=0
 RUN_TESTS=1
 DRY_RUN=0
+TLON_BUILD_CLI="${TLON_BUILD_CLI:-1}"
+TLON_APPS_REPO="${TLON_APPS_REPO:-https://github.com/tloncorp/tlon-apps.git}"
+TLON_APPS_REF="${TLON_APPS_REF:-77d6286aff52ca72ccc9003fce5dff46a844818d}"
+TLON_APPS_DIR="${TLON_APPS_DIR:-}"
+TLON_CLI_DEST="${TLON_CLI_DEST:-}"
 
 usage() {
     cat <<EOF
-Usage: bash $(basename "$0") [--dry-run] [--restart-gateway] [--no-tests] [--help]
+Usage: bash $(basename "$0") [--dry-run] [--restart-gateway] [--no-tests] [--no-cli-build] [--help]
 
 Environment overrides:
   HERMES_HOME    Hermes home directory (default: \$HOME/.hermes)
@@ -36,6 +41,11 @@ Environment overrides:
   PATCH          Tlon patch file (default: script directory/tlon-pr.patch)
   APPLY_SCRIPT   Tlon apply script (default: script directory/apply-tlon.sh)
   BRANCH         Patch branch name (default: tlon-apply)
+  TLON_BUILD_CLI Build/pin monorepo tlon CLI after patch (1/0, default: 1)
+  TLON_APPS_REPO tlon-apps Git URL passed to apply-tlon.sh
+  TLON_APPS_REF  tlon-apps ref/commit passed to apply-tlon.sh
+  TLON_APPS_DIR  Existing tlon-apps checkout passed to apply-tlon.sh
+  TLON_CLI_DEST  Built CLI destination passed to apply-tlon.sh
 EOF
 }
 
@@ -44,6 +54,7 @@ while [ "$#" -gt 0 ]; do
         --dry-run) DRY_RUN=1 ;;
         --restart-gateway) RESTART_GATEWAY=1 ;;
         --no-tests) RUN_TESTS=0 ;;
+        --no-cli-build) TLON_BUILD_CLI=0 ;;
         --help|-h) usage; exit 0 ;;
         *) echo "ERROR: unknown argument: $1" >&2; usage; exit 2 ;;
     esac
@@ -93,6 +104,11 @@ run_apply_script() {
     HERMES_AGENT="$HERMES_AGENT" \
     PATCH="$PATCH" \
     BRANCH="$BRANCH" \
+    TLON_BUILD_CLI="$TLON_BUILD_CLI" \
+    TLON_APPS_REPO="$TLON_APPS_REPO" \
+    TLON_APPS_REF="$TLON_APPS_REF" \
+    TLON_APPS_DIR="$TLON_APPS_DIR" \
+    TLON_CLI_DEST="$TLON_CLI_DEST" \
         bash "$APPLY_SCRIPT" "${args[@]}"
 }
 
@@ -103,6 +119,11 @@ run_apply_dry_run() {
     HERMES_AGENT="$HERMES_AGENT" \
     PATCH="$PATCH" \
     BRANCH="$BRANCH" \
+    TLON_BUILD_CLI="$TLON_BUILD_CLI" \
+    TLON_APPS_REPO="$TLON_APPS_REPO" \
+    TLON_APPS_REF="$TLON_APPS_REF" \
+    TLON_APPS_DIR="$TLON_APPS_DIR" \
+    TLON_CLI_DEST="$TLON_CLI_DEST" \
         bash "$APPLY_SCRIPT" "${args[@]}"
 }
 
