@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.2.1 - 2026-06-18
+
+### Fixed
+
+- Patched gateway DM delivery for current Tlon apps: `TlonCLI.send_message("~ship", text)` now sends direct messages via an Eyre `chat` poke using `chat-dm-action-2` and dotted decimal `@da` writ IDs instead of the stale `tlon posts send ~ship ...` CLI path, which current Tlon rejects.
+- Added a regression test covering the v2 DM payload shape and timestamp-derived writ ID.
+
+### Verified
+
+- Focused Tlon plugin tests passed in the live Hermes checkout: `360 passed, 21 subtests passed`.
+- Refreshed `tlon-pr.patch` applied cleanly in a disposable worktree from Hermes `main` `426f321e8`; the new DM regression passed there.
+- Live patched `TlonCLI.send_message("~dinnyt-divsud", ...)` delivered a real DM, verified by Tlon message search.
+
 ## 0.2.0 - 2026-06-18
 
 ### Changed

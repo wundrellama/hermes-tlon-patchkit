@@ -2,7 +2,7 @@
 
 Portable scripts for updating a source-installed [Hermes Agent](https://github.com/NousResearch/hermes-agent) checkout while preserving the Tlon/Urbit platform adapter patch.
 
-As of `0.2.0`, `tlon-pr.patch` tracks Tlon's upstream Hermes plugin package from:
+As of `0.2.1`, `tlon-pr.patch` tracks Tlon's upstream Hermes plugin package from:
 
 ```text
 https://github.com/tloncorp/tlon-apps/tree/develop/packages/hermes-tlon-adapter

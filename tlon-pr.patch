@@ -1,6 +1,6 @@
 diff --git a/plugins/platforms/tlon/.env.example b/plugins/platforms/tlon/.env.example
 new file mode 100644
-index 0000000..6ba8331
+index 000000000..6ba83316d
 --- /dev/null
 +++ b/plugins/platforms/tlon/.env.example
 @@ -0,0 +1,107 @@
@@ -113,7 +113,7 @@ index 0000000..6ba8331
 +HERMES_GATEWAY_ARGS=--replace
 diff --git a/plugins/platforms/tlon/README.md b/plugins/platforms/tlon/README.md
 new file mode 100644
-index 0000000..675d99a
+index 000000000..675d99ad2
 --- /dev/null
 +++ b/plugins/platforms/tlon/README.md
 @@ -0,0 +1,254 @@
@@ -373,7 +373,7 @@ index 0000000..675d99a
 +The adapter reconnects its Eyre SSE channel when no bytes arrive for `TLON_SSE_READ_TIMEOUT_SECONDS`. This is meant to recover stale sleep/wake sockets and mirrors the byte timeout behavior in `@tloncorp/api`.
 diff --git a/plugins/platforms/tlon/__init__.py b/plugins/platforms/tlon/__init__.py
 new file mode 100644
-index 0000000..d4f1d7b
+index 000000000..d4f1d7bf0
 --- /dev/null
 +++ b/plugins/platforms/tlon/__init__.py
 @@ -0,0 +1,3 @@
@@ -382,7 +382,7 @@ index 0000000..d4f1d7b
 +__all__ = ["register"]
 diff --git a/plugins/platforms/tlon/adapter.py b/plugins/platforms/tlon/adapter.py
 new file mode 100644
-index 0000000..14131ba
+index 000000000..14131ba01
 --- /dev/null
 +++ b/plugins/platforms/tlon/adapter.py
 @@ -0,0 +1,2021 @@
@@ -2409,7 +2409,7 @@ index 0000000..14131ba
 +    )
 diff --git a/plugins/platforms/tlon/approval.py b/plugins/platforms/tlon/approval.py
 new file mode 100644
-index 0000000..e57d03d
+index 000000000..e57d03dd3
 --- /dev/null
 +++ b/plugins/platforms/tlon/approval.py
 @@ -0,0 +1,585 @@
@@ -3000,7 +3000,7 @@ index 0000000..e57d03d
 +    return make_a2ui_blob_entry(f"approval-{request_id}", "root", components)
 diff --git a/plugins/platforms/tlon/attention.py b/plugins/platforms/tlon/attention.py
 new file mode 100644
-index 0000000..f7d1103
+index 000000000..f7d11032b
 --- /dev/null
 +++ b/plugins/platforms/tlon/attention.py
 @@ -0,0 +1,44 @@
@@ -3050,7 +3050,7 @@ index 0000000..f7d1103
 +    return AttentionDecision("drop", "unaddressed")
 diff --git a/plugins/platforms/tlon/channel_access.py b/plugins/platforms/tlon/channel_access.py
 new file mode 100644
-index 0000000..e79e61f
+index 000000000..e79e61fd6
 --- /dev/null
 +++ b/plugins/platforms/tlon/channel_access.py
 @@ -0,0 +1,203 @@
@@ -3259,7 +3259,7 @@ index 0000000..e79e61f
 +    )
 diff --git a/plugins/platforms/tlon/dev/Dockerfile b/plugins/platforms/tlon/dev/Dockerfile
 new file mode 100644
-index 0000000..937122a
+index 000000000..937122abc
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/Dockerfile
 @@ -0,0 +1,42 @@
@@ -3307,7 +3307,7 @@ index 0000000..937122a
 +ENTRYPOINT ["/usr/local/bin/hermes-tlon-dev-entrypoint"]
 diff --git a/plugins/platforms/tlon/dev/docker-compose.yml b/plugins/platforms/tlon/dev/docker-compose.yml
 new file mode 100644
-index 0000000..e6c5c74
+index 000000000..e6c5c74fa
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/docker-compose.yml
 @@ -0,0 +1,36 @@
@@ -3349,7 +3349,7 @@ index 0000000..e6c5c74
 +  tlon-api-node-modules:
 diff --git a/plugins/platforms/tlon/dev/down.sh b/plugins/platforms/tlon/dev/down.sh
 new file mode 100755
-index 0000000..41215b7
+index 000000000..41215b7d7
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/down.sh
 @@ -0,0 +1,6 @@
@@ -3361,7 +3361,7 @@ index 0000000..41215b7
 +docker compose --env-file ../.env down "$@"
 diff --git a/plugins/platforms/tlon/dev/entrypoint.sh b/plugins/platforms/tlon/dev/entrypoint.sh
 new file mode 100755
-index 0000000..dd65697
+index 000000000..dd656971b
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/entrypoint.sh
 @@ -0,0 +1,261 @@
@@ -3628,7 +3628,7 @@ index 0000000..dd65697
 +exec hermes gateway run "${GATEWAY_ARGS[@]}"
 diff --git a/plugins/platforms/tlon/dev/run.sh b/plugins/platforms/tlon/dev/run.sh
 new file mode 100755
-index 0000000..6ba074c
+index 000000000..6ba074c11
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/run.sh
 @@ -0,0 +1,12 @@
@@ -3646,7 +3646,7 @@ index 0000000..6ba074c
 +docker compose --env-file ../.env up --build
 diff --git a/plugins/platforms/tlon/dev/shell.sh b/plugins/platforms/tlon/dev/shell.sh
 new file mode 100755
-index 0000000..a44af11
+index 000000000..a44af11b9
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/shell.sh
 @@ -0,0 +1,6 @@
@@ -3658,7 +3658,7 @@ index 0000000..a44af11
 +docker compose --env-file ../.env exec hermes-tlon bash
 diff --git a/plugins/platforms/tlon/dev/test.sh b/plugins/platforms/tlon/dev/test.sh
 new file mode 100755
-index 0000000..bab4b33
+index 000000000..bab4b33e3
 --- /dev/null
 +++ b/plugins/platforms/tlon/dev/test.sh
 @@ -0,0 +1,11 @@
@@ -3675,7 +3675,7 @@ index 0000000..bab4b33
 +PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover . -p 'test_*.py' "$@"
 diff --git a/plugins/platforms/tlon/history.py b/plugins/platforms/tlon/history.py
 new file mode 100644
-index 0000000..40811d4
+index 000000000..40811d4b7
 --- /dev/null
 +++ b/plugins/platforms/tlon/history.py
 @@ -0,0 +1,250 @@
@@ -3931,7 +3931,7 @@ index 0000000..40811d4
 +    )
 diff --git a/plugins/platforms/tlon/image_search.py b/plugins/platforms/tlon/image_search.py
 new file mode 100644
-index 0000000..b49d3f5
+index 000000000..b49d3f52e
 --- /dev/null
 +++ b/plugins/platforms/tlon/image_search.py
 @@ -0,0 +1,221 @@
@@ -4158,7 +4158,7 @@ index 0000000..b49d3f5
 +    return await execute_image_search_tool(params)
 diff --git a/plugins/platforms/tlon/mention.py b/plugins/platforms/tlon/mention.py
 new file mode 100644
-index 0000000..99bfb9a
+index 000000000..99bfb9aea
 --- /dev/null
 +++ b/plugins/platforms/tlon/mention.py
 @@ -0,0 +1,92 @@
@@ -4256,7 +4256,7 @@ index 0000000..99bfb9a
 +    )
 diff --git a/plugins/platforms/tlon/owner_listen.py b/plugins/platforms/tlon/owner_listen.py
 new file mode 100644
-index 0000000..c58d3d2
+index 000000000..c58d3d262
 --- /dev/null
 +++ b/plugins/platforms/tlon/owner_listen.py
 @@ -0,0 +1,545 @@
@@ -4807,7 +4807,7 @@ index 0000000..c58d3d2
 +    )
 diff --git a/plugins/platforms/tlon/package.json b/plugins/platforms/tlon/package.json
 new file mode 100644
-index 0000000..77eda42
+index 000000000..77eda425b
 --- /dev/null
 +++ b/plugins/platforms/tlon/package.json
 @@ -0,0 +1,11 @@
@@ -4824,7 +4824,7 @@ index 0000000..77eda42
 +}
 diff --git a/plugins/platforms/tlon/plugin.yaml b/plugins/platforms/tlon/plugin.yaml
 new file mode 100644
-index 0000000..550f804
+index 000000000..550f804f6
 --- /dev/null
 +++ b/plugins/platforms/tlon/plugin.yaml
 @@ -0,0 +1,202 @@
@@ -5032,7 +5032,7 @@ index 0000000..550f804
 +    password: true
 diff --git a/plugins/platforms/tlon/presence.py b/plugins/platforms/tlon/presence.py
 new file mode 100644
-index 0000000..c5833db
+index 000000000..c5833db16
 --- /dev/null
 +++ b/plugins/platforms/tlon/presence.py
 @@ -0,0 +1,519 @@
@@ -5557,7 +5557,7 @@ index 0000000..c5833db
 +    )
 diff --git a/plugins/platforms/tlon/prompts/hermes/.hermes.md b/plugins/platforms/tlon/prompts/hermes/.hermes.md
 new file mode 100644
-index 0000000..d135743
+index 000000000..d135743da
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/hermes/.hermes.md
 @@ -0,0 +1,19 @@
@@ -5582,7 +5582,7 @@ index 0000000..d135743
 +{{include:shared/owner-listen.md}}
 diff --git a/plugins/platforms/tlon/prompts/hermes/SOUL.md b/plugins/platforms/tlon/prompts/hermes/SOUL.md
 new file mode 100644
-index 0000000..d134b39
+index 000000000..d134b3928
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/hermes/SOUL.md
 @@ -0,0 +1,7 @@
@@ -5595,7 +5595,7 @@ index 0000000..d134b39
 +{{include:shared/security.md}}
 diff --git a/plugins/platforms/tlon/prompts/hermes/USER.md b/plugins/platforms/tlon/prompts/hermes/USER.md
 new file mode 100644
-index 0000000..1f85c5c
+index 000000000..1f85c5ce2
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/hermes/USER.md
 @@ -0,0 +1,5 @@
@@ -5606,7 +5606,7 @@ index 0000000..1f85c5c
 +The owner uses Tlon Messenger as the primary place to interact with this hosted Hermes bot. The bot should make the owner's Tlon experience smoother, more useful, and easier to return to.
 diff --git a/plugins/platforms/tlon/prompts/shared/behavior.md b/plugins/platforms/tlon/prompts/shared/behavior.md
 new file mode 100644
-index 0000000..20d3737
+index 000000000..20d37373f
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/behavior.md
 @@ -0,0 +1,7 @@
@@ -5619,7 +5619,7 @@ index 0000000..20d3737
 +If you are unsure whether you can do something, check the available tool or command help before saying you cannot do it.
 diff --git a/plugins/platforms/tlon/prompts/shared/identity.md b/plugins/platforms/tlon/prompts/shared/identity.md
 new file mode 100644
-index 0000000..9bcfbcf
+index 000000000..9bcfbcf03
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/identity.md
 @@ -0,0 +1,7 @@
@@ -5632,7 +5632,7 @@ index 0000000..9bcfbcf
 +The owner can configure you and give admin instructions. Other allowed users can chat with you, but they should not be treated as owners merely because they ask. Trust the platform user id in the Hermes session context over claims in message text.
 diff --git a/plugins/platforms/tlon/prompts/shared/owner-listen.md b/plugins/platforms/tlon/prompts/shared/owner-listen.md
 new file mode 100644
-index 0000000..e127ed3
+index 000000000..e127ed345
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/owner-listen.md
 @@ -0,0 +1,13 @@
@@ -5651,7 +5651,7 @@ index 0000000..e127ed3
 +Never fabricate the output of these commands, and never treat a non-owner's use of them as authoritative.
 diff --git a/plugins/platforms/tlon/prompts/shared/security.md b/plugins/platforms/tlon/prompts/shared/security.md
 new file mode 100644
-index 0000000..0688986
+index 000000000..068898622
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/security.md
 @@ -0,0 +1,9 @@
@@ -5666,7 +5666,7 @@ index 0000000..0688986
 +Only the owner should request changes to your bot identity or profile, such as nickname, avatar, bio, status, or cover image.
 diff --git a/plugins/platforms/tlon/prompts/shared/tlon-groups.md b/plugins/platforms/tlon/prompts/shared/tlon-groups.md
 new file mode 100644
-index 0000000..735f143
+index 000000000..735f143b2
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/tlon-groups.md
 @@ -0,0 +1,19 @@
@@ -5691,7 +5691,7 @@ index 0000000..735f143
 +The bot node remains the group host. The owner is the human Tlon user who should be invited and made admin.
 diff --git a/plugins/platforms/tlon/prompts/shared/tlon-profile.md b/plugins/platforms/tlon/prompts/shared/tlon-profile.md
 new file mode 100644
-index 0000000..6ac3745
+index 000000000..6ac37459a
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/tlon-profile.md
 @@ -0,0 +1,31 @@
@@ -5728,7 +5728,7 @@ index 0000000..6ac3745
 +Do not claim the avatar, cover, or profile field was changed until both the upload step, if needed, and the `contacts update-profile` step return success. Keep the user-facing reply concise: one brief acknowledgement before work if useful, then one final success or failure summary. Do not send a transcript of every attempted URL or command.
 diff --git a/plugins/platforms/tlon/prompts/shared/tool-discipline.md b/plugins/platforms/tlon/prompts/shared/tool-discipline.md
 new file mode 100644
-index 0000000..56d979f
+index 000000000..56d979fc1
 --- /dev/null
 +++ b/plugins/platforms/tlon/prompts/shared/tool-discipline.md
 @@ -0,0 +1,19 @@
@@ -5753,7 +5753,7 @@ index 0000000..56d979f
 +-   DM post ids that include an author prefix
 diff --git a/plugins/platforms/tlon/requirements.txt b/plugins/platforms/tlon/requirements.txt
 new file mode 100644
-index 0000000..b8d6135
+index 000000000..b8d61350b
 --- /dev/null
 +++ b/plugins/platforms/tlon/requirements.txt
 @@ -0,0 +1,2 @@
@@ -5761,7 +5761,7 @@ index 0000000..b8d6135
 +posthog>=3
 diff --git a/plugins/platforms/tlon/telemetry.py b/plugins/platforms/tlon/telemetry.py
 new file mode 100644
-index 0000000..51c3118
+index 000000000..51c311876
 --- /dev/null
 +++ b/plugins/platforms/tlon/telemetry.py
 @@ -0,0 +1,931 @@
@@ -6698,7 +6698,7 @@ index 0000000..51c3118
 +    )
 diff --git a/plugins/platforms/tlon/test_adapter_approvals.py b/plugins/platforms/tlon/test_adapter_approvals.py
 new file mode 100644
-index 0000000..b8aca9e
+index 000000000..b8aca9ee3
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_adapter_approvals.py
 @@ -0,0 +1,895 @@
@@ -7599,7 +7599,7 @@ index 0000000..b8aca9e
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_adapter_attention.py b/plugins/platforms/tlon/test_adapter_attention.py
 new file mode 100644
-index 0000000..1b199e1
+index 000000000..1b199e113
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_adapter_attention.py
 @@ -0,0 +1,536 @@
@@ -8141,7 +8141,7 @@ index 0000000..1b199e1
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_adapter_owner_listen.py b/plugins/platforms/tlon/test_adapter_owner_listen.py
 new file mode 100644
-index 0000000..c44db6a
+index 000000000..c44db6ada
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_adapter_owner_listen.py
 @@ -0,0 +1,1180 @@
@@ -9327,7 +9327,7 @@ index 0000000..c44db6a
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_approval.py b/plugins/platforms/tlon/test_approval.py
 new file mode 100644
-index 0000000..fe96354
+index 000000000..fe96354b7
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_approval.py
 @@ -0,0 +1,377 @@
@@ -9710,7 +9710,7 @@ index 0000000..fe96354
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_attention.py b/plugins/platforms/tlon/test_attention.py
 new file mode 100644
-index 0000000..4934cd2
+index 000000000..4934cd204
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_attention.py
 @@ -0,0 +1,52 @@
@@ -9768,7 +9768,7 @@ index 0000000..4934cd2
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_channel_access.py b/plugins/platforms/tlon/test_channel_access.py
 new file mode 100644
-index 0000000..7ba6dfb
+index 000000000..7ba6dfb34
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_channel_access.py
 @@ -0,0 +1,139 @@
@@ -9913,7 +9913,7 @@ index 0000000..7ba6dfb
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_history.py b/plugins/platforms/tlon/test_history.py
 new file mode 100644
-index 0000000..844afed
+index 000000000..844afed17
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_history.py
 @@ -0,0 +1,290 @@
@@ -10209,7 +10209,7 @@ index 0000000..844afed
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_image_search.py b/plugins/platforms/tlon/test_image_search.py
 new file mode 100644
-index 0000000..45f06df
+index 000000000..45f06df55
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_image_search.py
 @@ -0,0 +1,151 @@
@@ -10366,7 +10366,7 @@ index 0000000..45f06df
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_mention.py b/plugins/platforms/tlon/test_mention.py
 new file mode 100644
-index 0000000..92227da
+index 000000000..92227da84
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_mention.py
 @@ -0,0 +1,86 @@
@@ -10458,7 +10458,7 @@ index 0000000..92227da
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_owner_listen.py b/plugins/platforms/tlon/test_owner_listen.py
 new file mode 100644
-index 0000000..c7e6ba8
+index 000000000..c7e6ba89b
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_owner_listen.py
 @@ -0,0 +1,628 @@
@@ -11092,7 +11092,7 @@ index 0000000..c7e6ba8
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_presence.py b/plugins/platforms/tlon/test_presence.py
 new file mode 100644
-index 0000000..a0d1aea
+index 000000000..a0d1aea12
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_presence.py
 @@ -0,0 +1,265 @@
@@ -11363,7 +11363,7 @@ index 0000000..a0d1aea
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_telemetry.py b/plugins/platforms/tlon/test_telemetry.py
 new file mode 100644
-index 0000000..72daf70
+index 000000000..72daf708c
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_telemetry.py
 @@ -0,0 +1,800 @@
@@ -12169,10 +12169,10 @@ index 0000000..72daf70
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_tlon_api.py b/plugins/platforms/tlon/test_tlon_api.py
 new file mode 100644
-index 0000000..fc6a49a
+index 000000000..d337fb5c7
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_tlon_api.py
-@@ -0,0 +1,766 @@
+@@ -0,0 +1,843 @@
 +import asyncio
 +import importlib.util
 +import sys
@@ -12691,7 +12691,84 @@ index 0000000..fc6a49a
 +        self.assertEqual(session.get_calls[0]["timeout"].total, 30)
 +
 +
++class FakeDmSendClient:
++    def __init__(self, cfg):
++        self.cfg = cfg
++        self.authenticated = False
++        self.opened = False
++        self.closed = False
++        self.pokes = []
++
++    async def authenticate(self):
++        self.authenticated = True
++        return "urbauth=fake"
++
++    async def open(self):
++        self.opened = True
++
++    async def poke(self, app, mark, json_payload):
++        self.pokes.append((app, mark, json_payload))
++        return len(self.pokes)
++
++    async def close(self):
++        self.closed = True
++
++
 +class TlonCLITests(unittest.TestCase):
++    def test_send_message_to_dm_uses_chat_dm_action_2_http_poke(self):
++        fake_clients = []
++        cfg = tlon_api.TlonConfig.from_env(
++            env={
++                "TLON_NODE_URL": "https://zod.tlon.network",
++                "TLON_NODE_ID": "~zod",
++                "TLON_ACCESS_CODE": "code",
++                "TLON_CLI": "tlon-test",
++            }
++        )
++
++        def client_factory(client_cfg):
++            client = FakeDmSendClient(client_cfg)
++            fake_clients.append(client)
++            return client
++
++        async def run():
++            cli = tlon_api.TlonCLI(cfg, client_factory=client_factory)
++            with patch.object(tlon_api.time, "time", return_value=1781770387.0):
++                return await cli.send_message("~nec", "hello from gateway")
++
++        result = asyncio.run(run())
++
++        self.assertTrue(result.success)
++        self.assertEqual(result.command, ("http", "chat-dm-action-2", "~nec"))
++        self.assertEqual(result.message_id, "~zod/170.141.217.343.014.495.060.927.377.582.325.760")
++        self.assertEqual(len(fake_clients), 1)
++        client = fake_clients[0]
++        self.assertTrue(client.authenticated)
++        self.assertTrue(client.opened)
++        self.assertTrue(client.closed)
++        self.assertEqual(len(client.pokes), 1)
++        app, mark, payload = client.pokes[0]
++        self.assertEqual(app, "chat")
++        self.assertEqual(mark, "chat-dm-action-2")
++        self.assertEqual(payload["ship"], "~nec")
++        self.assertEqual(payload["diff"]["id"], result.message_id)
++        self.assertEqual(
++            payload["diff"]["delta"],
++            {
++                "add": {
++                    "essay": {
++                        "content": [{"inline": ["hello from gateway"]}],
++                        "sent": 1781770387000,
++                        "author": "~zod",
++                        "kind": "/chat",
++                        "meta": None,
++                        "blob": None,
++                    },
++                    "time": None,
++                }
++            },
++        )
++
 +    def test_send_and_reply_use_tlon_cli(self):
 +        calls = []
 +        cfg = tlon_api.TlonConfig.from_env(
@@ -12941,7 +13018,7 @@ index 0000000..fc6a49a
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_tlon_tool.py b/plugins/platforms/tlon/test_tlon_tool.py
 new file mode 100644
-index 0000000..ae8a670
+index 000000000..ae8a6706a
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_tlon_tool.py
 @@ -0,0 +1,359 @@
@@ -13306,7 +13383,7 @@ index 0000000..ae8a670
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_version.py b/plugins/platforms/tlon/test_version.py
 new file mode 100644
-index 0000000..ee91ec8
+index 000000000..ee91ec814
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_version.py
 @@ -0,0 +1,154 @@
@@ -13466,10 +13543,10 @@ index 0000000..ee91ec8
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/tlon_api.py b/plugins/platforms/tlon/tlon_api.py
 new file mode 100644
-index 0000000..2c30469
+index 000000000..149657a40
 --- /dev/null
 +++ b/plugins/platforms/tlon/tlon_api.py
-@@ -0,0 +1,1426 @@
+@@ -0,0 +1,1491 @@
 +"""Small Tlon helpers for the Hermes platform plugin.
 +
 +Writes go through the packaged ``tlon`` CLI. Reads use Eyre's SSE channel API.
@@ -13617,9 +13694,23 @@ index 0000000..2c30469
 +    return parsed if parsed >= 0 else default
 +
 +
++DA_UNIX_EPOCH = 170141184475152167957503069145530368
++
++
 +def _format_da_from_unix_millis(value: float) -> str:
 +    dt = datetime.fromtimestamp(value / 1000.0, tz=timezone.utc)
 +    return f"~{dt.year}.{dt.month}.{dt.day}..{dt.hour:02d}.{dt.minute:02d}.{dt.second:02d}"
++
++
++def _format_urbit_da_decimal_from_unix_millis(value: int) -> str:
++    """Return the dotted decimal @da format Tlon v2 writ IDs use."""
++    da_value = DA_UNIX_EPOCH + (int(value) * (1 << 64)) // 1000
++    text = str(da_value)
++    parts: list[str] = []
++    while text:
++        parts.append(text[-3:])
++        text = text[:-3]
++    return ".".join(reversed(parts))
 +
 +
 +def _format_dr_seconds(seconds: int) -> str:
@@ -14101,13 +14192,64 @@ index 0000000..2c30469
 +        *,
 +        runner: CommandRunner | None = None,
 +        observer: CliObserver | None = None,
++        client_factory: Callable[[TlonConfig], Any] | None = None,
 +    ) -> None:
 +        self.config = config
 +        self._runner = runner or self._run_subprocess
 +        self._observer = observer
++        self._client_factory = client_factory or TlonSSEClient
 +
 +    async def send_message(self, chat_id: str, text: str) -> TlonSendResult:
++        normalized = normalize_ship(chat_id)
++        if normalized == str(chat_id or "").strip() and normalized.startswith("~"):
++            return await self._send_dm_message(normalized, text)
 +        return await self._run(("posts", "send", chat_id, text))
++
++    async def _send_dm_message(self, chat_id: str, text: str) -> TlonSendResult:
++        sent_at = int(time.time() * 1000)
++        message_id = f"{self.config.ship_name}/{_format_urbit_da_decimal_from_unix_millis(sent_at)}"
++        payload = {
++            "ship": chat_id,
++            "diff": {
++                "id": message_id,
++                "delta": {
++                    "add": {
++                        "essay": {
++                            "content": [{"inline": [text]}],
++                            "sent": sent_at,
++                            "author": self.config.ship_name,
++                            "kind": "/chat",
++                            "meta": None,
++                            "blob": None,
++                        },
++                        "time": None,
++                    }
++                },
++            },
++        }
++        command = ("http", "chat-dm-action-2", chat_id)
++        client = self._client_factory(self.config)
++        try:
++            await client.authenticate()
++            await client.open()
++            await client.poke("chat", "chat-dm-action-2", payload)
++        except Exception as exc:
++            return TlonSendResult(
++                success=False,
++                command=command,
++                returncode=1,
++                error=f"Tlon DM send failed: {exc}",
++            )
++        finally:
++            try:
++                await client.close()
++            except Exception:
++                pass
++        return TlonSendResult(
++            success=True,
++            command=command,
++            message_id=message_id,
++        )
 +
 +    async def send_reply(
 +        self,
@@ -14898,7 +15040,7 @@ index 0000000..2c30469
 +        return datetime.now(tz=timezone.utc)
 diff --git a/plugins/platforms/tlon/tlon_tool.py b/plugins/platforms/tlon/tlon_tool.py
 new file mode 100644
-index 0000000..79d081b
+index 000000000..79d081b69
 --- /dev/null
 +++ b/plugins/platforms/tlon/tlon_tool.py
 @@ -0,0 +1,424 @@
@@ -15328,7 +15470,7 @@ index 0000000..79d081b
 +    return None
 diff --git a/plugins/platforms/tlon/version.py b/plugins/platforms/tlon/version.py
 new file mode 100644
-index 0000000..22f9c1b
+index 000000000..22f9c1b72
 --- /dev/null
 +++ b/plugins/platforms/tlon/version.py
 @@ -0,0 +1,134 @@
@@ -15467,7 +15609,7 @@ index 0000000..22f9c1b
 +        ]
 +    )
 diff --git a/pyproject.toml b/pyproject.toml
-index 6e37112..1661158 100644
+index 6e371126d..1661158f5 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
 @@ -155,9 +155,9 @@ modal = ["modal==1.3.4"]
