@@ -382,10 +382,10 @@ index 000000000..d4f1d7bf0
 +__all__ = ["register"]
 diff --git a/plugins/platforms/tlon/adapter.py b/plugins/platforms/tlon/adapter.py
 new file mode 100644
-index 000000000..14131ba01
+index 000000000..69d5f1dfa
 --- /dev/null
 +++ b/plugins/platforms/tlon/adapter.py
-@@ -0,0 +1,2021 @@
+@@ -0,0 +1,2163 @@
 +"""Hermes platform plugin for Tlon.
 +
 +Inbound messages are read from Eyre SSE subscriptions. Outbound messages are
@@ -713,6 +713,8 @@ index 000000000..14131ba01
 +        self._connected_at = 0.0
 +        self._sse: Optional[TlonSSEClient] = None
 +        self._stream_task: Optional[asyncio.Task] = None
++        self._channel_catchup_task: Optional[asyncio.Task] = None
++        self._channel_catchup_seeded = False
 +        self._gateway_status = TlonGatewayStatus(
 +            self.tlon_config,
 +            on_error=lambda operation, exc: self._telemetry.error(
@@ -728,6 +730,9 @@ index 000000000..14131ba01
 +        self._seen_ids: set[str] = set()
 +        self._seen_order: list[str] = []
 +        self._monitored_channels = set(self.tlon_config.channels)
++        home_channel = (self.tlon_config.home_channel or "").strip()
++        if home_channel and not _is_dm_chat_id(home_channel):
++            self._monitored_channels.add(home_channel)
 +        self._mention_matcher = self._build_mention_matcher()
 +        self._participated_threads: set[str] = set()
 +        self._known_bot_consecutive_by_channel: dict[str, int] = {}
@@ -779,11 +784,15 @@ index 000000000..14131ba01
 +            await self._process_pending_dm_invites()
 +            await self._process_pending_group_invites()
 +            await self._start_gateway_status()
-+            self._stream_task = asyncio.create_task(self._run_stream())
 +            self._computing_presence.bind_loop(asyncio.get_running_loop())
 +            set_active_computing_presence_tracker(self._computing_presence)
 +            self._mark_connected()
 +            self._connected_at = time.monotonic()
++            self._stream_task = asyncio.create_task(self._run_stream())
++            if self.tlon_config.channel_catchup_interval_seconds > 0:
++                self._channel_catchup_task = asyncio.create_task(
++                    self._run_channel_catchup_loop()
++                )
 +            self._telemetry.gateway_connected(
 +                {
 +                    "source": source,
@@ -822,6 +831,13 @@ index 000000000..14131ba01
 +            except asyncio.CancelledError:
 +                pass
 +            self._stream_task = None
++        if self._channel_catchup_task is not None:
++            self._channel_catchup_task.cancel()
++            try:
++                await self._channel_catchup_task
++            except asyncio.CancelledError:
++                pass
++            self._channel_catchup_task = None
 +        await self._close_sse()
 +        self._seen_ids.clear()
 +        self._seen_order.clear()
@@ -829,6 +845,7 @@ index 000000000..14131ba01
 +        self._known_bot_consecutive_by_channel.clear()
 +        self._processed_dm_invites.clear()
 +        self._processed_group_invites.clear()
++        self._channel_catchup_seeded = False
 +        self._telemetry.flush()
 +
 +    def _build_mention_matcher(self, *, nickname: str = "") -> BotMentionMatcher:
@@ -840,15 +857,23 @@ index 000000000..14131ba01
 +            )
 +        )
 +
++    def _home_owner_listen_channels(self) -> set[str]:
++        home = (self.tlon_config.home_channel or "").strip()
++        if home and not _is_dm_chat_id(home):
++            return canonical_nest_set([home])
++        return set()
++
 +    def _owner_listen_env_defaults(self) -> OwnerListenState:
++        enabled_channels = canonical_nest_set(
++            self.tlon_config.owner_listen_enabled_channels
++        )
++        enabled_channels.update(self._home_owner_listen_channels())
 +        return OwnerListenState(
 +            enabled=self.tlon_config.owner_listen,
 +            disabled_channels=canonical_nest_set(
 +                self.tlon_config.owner_listen_disabled_channels
 +            ),
-+            enabled_channels=canonical_nest_set(
-+                self.tlon_config.owner_listen_enabled_channels
-+            ),
++            enabled_channels=enabled_channels,
 +            default_all=self.tlon_config.owner_listen_default == "all",
 +        )
 +
@@ -878,6 +903,10 @@ index 000000000..14131ba01
 +            return
 +        bucket = parse_settings_bucket(payload)
 +        self._owner_listen = owner_listen_state_from_settings(bucket, defaults=defaults)
++        # Home-channel semantics should not depend on who hosts the group. Even
++        # if the settings store has an explicit empty enabled-channel list, the
++        # configured home channel remains owner-listen enabled for the owner.
++        self._owner_listen.enabled_channels.update(self._home_owner_listen_channels())
 +        new_group_channels = settings_group_channels(bucket)
 +        removed_group_channels = (
 +            self._settings_group_channels
@@ -1718,6 +1747,108 @@ index 000000000..14131ba01
 +            finally:
 +                self._sse = None
 +
++    def _channel_catchup_nests(self) -> list[str]:
++        """Channels whose materialized history should reconcile missed SSE events."""
++        nests = set(self._monitored_channels)
++        home = (self.tlon_config.home_channel or "").strip()
++        if home and not _is_dm_chat_id(home):
++            nests.add(home)
++        return sorted(
++            nest
++            for nest in nests
++            if isinstance(nest, str)
++            and nest.split("/", 1)[0] in ("chat", "heap", "diary")
++        )
++
++    async def _run_channel_catchup_loop(self) -> None:
++        interval = max(1.0, float(self.tlon_config.channel_catchup_interval_seconds))
++        while self._running:
++            try:
++                seed_only = not self._channel_catchup_seeded
++                await self._catch_up_channels_once(seed_only=seed_only)
++                self._channel_catchup_seeded = True
++            except asyncio.CancelledError:
++                return
++            except Exception as exc:
++                logger.debug("[tlon] channel catch-up poll failed: %s", exc)
++                self._telemetry.error("channel_catchup", exc, operation="poll")
++            try:
++                await asyncio.sleep(interval)
++            except asyncio.CancelledError:
++                return
++
++    async def _catch_up_channels_once(self, *, seed_only: bool = False) -> None:
++        if self._sse is None:
++            return
++        count = int(self.tlon_config.channel_catchup_history_count)
++        if count <= 0:
++            return
++        for nest in self._channel_catchup_nests():
++            if not self._running and self._stream_task is not None:
++                return
++            try:
++                entries = await fetch_channel_history(self._sse.scry, nest, count)
++            except Exception as exc:
++                logger.debug("[tlon] channel catch-up failed for %s: %s", nest, exc)
++                self._telemetry.error("channel_catchup", exc, operation="fetch", channel=nest)
++                continue
++            dispatched = 0
++            seeded = 0
++            for entry in entries:
++                message = self._message_from_history_entry(nest, entry)
++                if message is None:
++                    continue
++                if seed_only:
++                    if self._mark_seen(message):
++                        seeded += 1
++                    continue
++                before = len(self._seen_ids)
++                await self._process_channel_message(message)
++                if len(self._seen_ids) > before:
++                    dispatched += 1
++            if seed_only and seeded:
++                logger.info(
++                    "[tlon] channel catch-up seeded %d existing post(s) from %s",
++                    seeded,
++                    nest,
++                )
++            elif dispatched:
++                logger.info(
++                    "[tlon] channel catch-up dispatched %d missed post(s) from %s",
++                    dispatched,
++                    nest,
++                )
++
++    def _message_from_history_entry(
++        self,
++        nest: str,
++        entry: Any,
++    ) -> Optional[TlonIncomingMessage]:
++        author = normalize_ship(getattr(entry, "author", ""))
++        text = str(getattr(entry, "content", "") or "").strip()
++        post_id = str(getattr(entry, "post_id", "") or "")
++        if not author or author == self.tlon_config.ship_name or not text or not post_id:
++            return None
++        try:
++            sent_at = datetime.fromtimestamp(
++                float(getattr(entry, "timestamp", 0.0) or 0.0) / 1000.0,
++                tz=timezone.utc,
++            )
++        except (TypeError, ValueError, OSError, OverflowError):
++            sent_at = datetime.now(timezone.utc)
++        return TlonIncomingMessage(
++            chat_id=nest,
++            chat_name=nest.rsplit("/", 1)[-1],
++            chat_type="group",
++            user_id=author,
++            user_name=author,
++            text=text,
++            message_id=post_id,
++            reply_to_message_id=None,
++            sent_at=sent_at,
++            raw={"source": "channel-catchup", "nest": nest, "post_id": post_id},
++        )
++
 +    async def _run_stream(self) -> None:
 +        backoff_idx = 0
 +        while self._running:
@@ -1782,7 +1913,9 @@ index 000000000..14131ba01
 +        message = parse_channel_message(raw, self_ship=self.tlon_config.ship_name)
 +        if message is None:
 +            return
++        await self._process_channel_message(message)
 +
++    async def _process_channel_message(self, message: TlonIncomingMessage) -> None:
 +        is_mentioned = self._mention_matcher.mentioned(message.text)
 +        clean_text = (
 +            self._mention_matcher.strip_leading(message.text)
@@ -1828,7 +1961,16 @@ index 000000000..14131ba01
 +            return
 +        if not self._passes_group_loop_safety(message):
 +            return
-+        dispatch_text = await self._with_group_context(message, clean_text, decision.reason)
++        if clean_text.startswith("/"):
++            # Gateway slash commands (/new, /model, /status, ...) must reach the
++            # gateway command router as the first token. Context wrapping turns
++            # them into ordinary model input and the model just roleplays the
++            # command instead of executing it.
++            dispatch_text = clean_text
++        else:
++            dispatch_text = await self._with_group_context(
++                message, clean_text, decision.reason
++            )
 +        await self._dispatch_message(
 +            replace(message, text=dispatch_text),
 +            is_dm=False,
@@ -7599,10 +7741,10 @@ index 000000000..b8aca9ee3
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_adapter_attention.py b/plugins/platforms/tlon/test_adapter_attention.py
 new file mode 100644
-index 000000000..1b199e113
+index 000000000..a67dfadcc
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_adapter_attention.py
-@@ -0,0 +1,536 @@
+@@ -0,0 +1,666 @@
 +import asyncio
 +import importlib.util
 +import os
@@ -8115,6 +8257,136 @@ index 000000000..1b199e113
 +            seed["home_channel"],
 +            {"chat_id": "chat/~pen/home", "name": "chat/~pen/home"},
 +        )
++
++    def test_channel_history_catchup_dispatches_home_channel_once(self):
++        adapter = self.make_adapter(
++            {
++                "channels": [],
++                "home_channel": "chat/~labbel/home",
++                "owner_ship": "~mug",
++            }
++        )
++        adapter._sse = FakeSSE(
++            payload={
++                "posts": {
++                    "170142": {
++                        "r-post": {
++                            "set": {
++                                "essay": {
++                                    "author": "~mug",
++                                    "sent": 1000,
++                                    "content": [{"inline": ["catch me"]}],
++                                },
++                                "seal": {"id": "170142"},
++                            }
++                        }
++                    }
++                }
++            }
++        )
++        events = []
++
++        async def record(event):
++            events.append(event)
++
++        adapter.handle_message = record
++        asyncio.run(adapter._catch_up_channels_once())
++        asyncio.run(adapter._catch_up_channels_once())
++
++        self.assertEqual(len(events), 1)
++        self.assertEqual(events[0].source.chat_id, "chat/~labbel/home")
++        self.assertEqual(events[0].text, "catch me")
++
++    def test_settings_load_preserves_home_channel_owner_listen(self):
++        adapter = self.make_adapter(
++            {
++                "channels": [],
++                "home_channel": "chat/~labbel/home",
++                "owner_ship": "~mug",
++            }
++        )
++        adapter._sse = FakeSSE(
++            payload={
++                "all": {
++                    "moltbot": {
++                        "tlon": {
++                            "ownerListenEnabledChannels": [],
++                        }
++                    }
++                }
++            }
++        )
++
++        asyncio.run(adapter._load_settings_state())
++        events = asyncio.run(
++            self.dispatches(
++                adapter,
++                channel_event(
++                    "home, no mention",
++                    author="~mug",
++                    nest="chat/~labbel/home",
++                    post_id="170143",
++                ),
++            )
++        )
++
++        self.assertEqual(len(events), 1)
++        self.assertEqual(events[0].text, "home, no mention")
++
++    def test_gateway_slash_command_in_home_channel_is_not_context_wrapped(self):
++        adapter = self.make_adapter(
++            {
++                "channels": [],
++                "home_channel": "chat/~labbel/home",
++                "owner_ship": "~mug",
++                "context_messages": 5,
++            }
++        )
++        adapter._sse = FakeSSE(
++            payload={
++                "posts": {
++                    "170142": {
++                        "r-post": {
++                            "set": {
++                                "essay": {
++                                    "author": "~mug",
++                                    "sent": 900,
++                                    "content": [{"inline": ["previous context"]}],
++                                },
++                                "seal": {"id": "170142"},
++                            }
++                        }
++                    },
++                    "170143": {
++                        "r-post": {
++                            "set": {
++                                "essay": {
++                                    "author": "~mug",
++                                    "sent": 1000,
++                                    "content": [{"inline": ["/new"]}],
++                                },
++                                "seal": {"id": "170143"},
++                            }
++                        }
++                    },
++                }
++            }
++        )
++
++        events = asyncio.run(
++            self.dispatches(
++                adapter,
++                channel_event(
++                    "/new",
++                    author="~mug",
++                    nest="chat/~labbel/home",
++                    post_id="170143",
++                ),
++            )
++        )
++
++        self.assertEqual(len(events), 1)
++        self.assertEqual(events[0].text, "/new")
 +
 +    def test_tlon_session_blocks_skill_management(self):
 +        with patch.dict(os.environ, {"HERMES_SESSION_PLATFORM": "tlon"}, clear=True):
@@ -12169,10 +12441,10 @@ index 000000000..72daf708c
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_tlon_api.py b/plugins/platforms/tlon/test_tlon_api.py
 new file mode 100644
-index 000000000..d337fb5c7
+index 000000000..f6796d576
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_tlon_api.py
-@@ -0,0 +1,843 @@
+@@ -0,0 +1,892 @@
 +import asyncio
 +import importlib.util
 +import sys
@@ -12769,7 +13041,63 @@ index 000000000..d337fb5c7
 +            },
 +        )
 +
-+    def test_send_and_reply_use_tlon_cli(self):
++    def test_send_message_to_chat_channel_uses_channel_action_http_poke(self):
++        fake_clients = []
++        cfg = tlon_api.TlonConfig.from_env(
++            env={
++                "TLON_NODE_URL": "https://zod.tlon.network",
++                "TLON_NODE_ID": "~zod",
++                "TLON_ACCESS_CODE": "code",
++                "TLON_CLI": "tlon-test",
++            }
++        )
++
++        def client_factory(client_cfg):
++            client = FakeDmSendClient(client_cfg)
++            fake_clients.append(client)
++            return client
++
++        async def run():
++            cli = tlon_api.TlonCLI(cfg, client_factory=client_factory)
++            with patch.object(tlon_api.time, "time", return_value=1781770387.0):
++                return await cli.send_message("chat/~zod/general", "hello home channel")
++
++        result = asyncio.run(run())
++
++        self.assertTrue(result.success)
++        self.assertEqual(result.command, ("http", "channel-action-2", "chat/~zod/general"))
++        self.assertEqual(result.message_id, "170.141.217.343.014.495.060.927.377.582.325.760")
++        self.assertEqual(len(fake_clients), 1)
++        client = fake_clients[0]
++        self.assertTrue(client.authenticated)
++        self.assertTrue(client.opened)
++        self.assertTrue(client.closed)
++        self.assertEqual(len(client.pokes), 1)
++        app, mark, payload = client.pokes[0]
++        self.assertEqual(app, "channels")
++        self.assertEqual(mark, "channel-action-2")
++        self.assertEqual(
++            payload,
++            {
++                "channel": {
++                    "nest": "chat/~zod/general",
++                    "action": {
++                        "post": {
++                            "add": {
++                                "content": [{"inline": ["hello home channel"]}],
++                                "sent": 1781770387000,
++                                "author": "~zod",
++                                "kind": "/chat",
++                                "meta": None,
++                                "blob": None,
++                            }
++                        }
++                    },
++                }
++            },
++        )
++
++    def test_send_reply_uses_tlon_cli(self):
 +        calls = []
 +        cfg = tlon_api.TlonConfig.from_env(
 +            env={
@@ -12786,25 +13114,18 @@ index 000000000..d337fb5c7
 +
 +        async def run():
 +            cli = tlon_api.TlonCLI(cfg, runner=runner)
-+            sent = await cli.send_message("chat/~zod/general", "hello --help")
-+            replied = await cli.send_reply(
++            return await cli.send_reply(
 +                "~nec",
 +                "170.141",
 +                "hi",
 +                parent_author="nec",
 +            )
-+            return sent, replied
 +
-+        sent, replied = asyncio.run(run())
++        replied = asyncio.run(run())
 +
-+        self.assertTrue(sent.success)
 +        self.assertTrue(replied.success)
 +        self.assertEqual(
 +            calls[0][0],
-+            ("tlon-test", "posts", "send", "chat/~zod/general", "hello --help"),
-+        )
-+        self.assertEqual(
-+            calls[1][0],
 +            ("tlon-test", "posts", "reply", "~nec", "170.141", "hi", "--author", "~nec"),
 +        )
 +        self.assertEqual(calls[0][1]["TLON_NODE_URL"], "https://zod.tlon.network")
@@ -13543,10 +13864,10 @@ index 000000000..ee91ec814
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/tlon_api.py b/plugins/platforms/tlon/tlon_api.py
 new file mode 100644
-index 000000000..149657a40
+index 000000000..99f04040f
 --- /dev/null
 +++ b/plugins/platforms/tlon/tlon_api.py
-@@ -0,0 +1,1491 @@
+@@ -0,0 +1,1565 @@
 +"""Small Tlon helpers for the Hermes platform plugin.
 +
 +Writes go through the packaged ``tlon`` CLI. Reads use Eyre's SSE channel API.
@@ -13577,6 +13898,8 @@ index 000000000..149657a40
 +DEFAULT_GATEWAY_ACTIVE_WINDOW_SECONDS = 300
 +DEFAULT_GATEWAY_OFFLINE_REPLY_COOLDOWN_SECONDS = 300
 +DEFAULT_SSE_READ_TIMEOUT_SECONDS = 60.0
++DEFAULT_CHANNEL_CATCHUP_INTERVAL_SECONDS = 15.0
++DEFAULT_CHANNEL_CATCHUP_HISTORY_COUNT = 10
 +DEFAULT_MAX_CONSECUTIVE_BOT_RESPONSES = 2
 +DEFAULT_CONTEXT_MESSAGES = 20
 +
@@ -13755,6 +14078,8 @@ index 000000000..149657a40
 +    gateway_status_active_window_seconds: int = DEFAULT_GATEWAY_ACTIVE_WINDOW_SECONDS
 +    gateway_status_reply_cooldown_seconds: int = DEFAULT_GATEWAY_OFFLINE_REPLY_COOLDOWN_SECONDS
 +    sse_read_timeout_seconds: float = DEFAULT_SSE_READ_TIMEOUT_SECONDS
++    channel_catchup_interval_seconds: float = DEFAULT_CHANNEL_CATCHUP_INTERVAL_SECONDS
++    channel_catchup_history_count: int = DEFAULT_CHANNEL_CATCHUP_HISTORY_COUNT
 +    # Force the hosted (memex) image-upload path. Opt-in: only true when the
 +    # operator sets TLON_HOSTING. Read once where the env is reliably present
 +    # (the adapter at startup) and carried via this field into CLI invocations,
@@ -14043,6 +14368,26 @@ index 000000000..149657a40
 +            ),
 +            DEFAULT_SSE_READ_TIMEOUT_SECONDS,
 +        )
++        channel_catchup_interval_seconds = _parse_float(
++            _env_or_extra(
++                env,
++                ("TLON_CHANNEL_CATCHUP_INTERVAL_SECONDS",),
++                extra,
++                ("channel_catchup_interval_seconds", "channel_catchup_interval"),
++                DEFAULT_CHANNEL_CATCHUP_INTERVAL_SECONDS,
++            ),
++            DEFAULT_CHANNEL_CATCHUP_INTERVAL_SECONDS,
++        )
++        channel_catchup_history_count = _parse_non_negative_int(
++            _env_or_extra(
++                env,
++                ("TLON_CHANNEL_CATCHUP_HISTORY_COUNT",),
++                extra,
++                ("channel_catchup_history_count", "channel_catchup_count"),
++                DEFAULT_CHANNEL_CATCHUP_HISTORY_COUNT,
++            ),
++            DEFAULT_CHANNEL_CATCHUP_HISTORY_COUNT,
++        )
 +
 +        auto_discover = parse_bool(
 +            _env_or_extra(env, ("TLON_AUTO_DISCOVER",), extra, ("auto_discover",))
@@ -14094,6 +14439,8 @@ index 000000000..149657a40
 +            gateway_status_active_window_seconds=gateway_status_active_window_seconds,
 +            gateway_status_reply_cooldown_seconds=gateway_status_reply_cooldown_seconds,
 +            sse_read_timeout_seconds=sse_read_timeout_seconds,
++            channel_catchup_interval_seconds=channel_catchup_interval_seconds,
++            channel_catchup_history_count=channel_catchup_history_count,
 +        )
 +
 +    def is_complete(self) -> bool:
@@ -14200,10 +14547,58 @@ index 000000000..149657a40
 +        self._client_factory = client_factory or TlonSSEClient
 +
 +    async def send_message(self, chat_id: str, text: str) -> TlonSendResult:
-+        normalized = normalize_ship(chat_id)
-+        if normalized == str(chat_id or "").strip() and normalized.startswith("~"):
++        target = str(chat_id or "").strip()
++        normalized = normalize_ship(target)
++        if normalized == target and normalized.startswith("~"):
 +            return await self._send_dm_message(normalized, text)
++        nest = parse_channel_nest(target)
++        if nest is not None and nest.get("type") == "chat":
++            return await self._send_chat_channel_message(target, text)
 +        return await self._run(("posts", "send", chat_id, text))
++
++    async def _send_chat_channel_message(self, chat_id: str, text: str) -> TlonSendResult:
++        sent_at = int(time.time() * 1000)
++        message_id = _format_urbit_da_decimal_from_unix_millis(sent_at)
++        payload = {
++            "channel": {
++                "nest": chat_id,
++                "action": {
++                    "post": {
++                        "add": {
++                            "content": [{"inline": [text]}],
++                            "sent": sent_at,
++                            "author": self.config.ship_name,
++                            "kind": "/chat",
++                            "meta": None,
++                            "blob": None,
++                        }
++                    }
++                },
++            }
++        }
++        command = ("http", "channel-action-2", chat_id)
++        client = self._client_factory(self.config)
++        try:
++            await client.authenticate()
++            await client.open()
++            await client.poke("channels", "channel-action-2", payload)
++        except Exception as exc:
++            return TlonSendResult(
++                success=False,
++                command=command,
++                returncode=1,
++                error=f"Tlon channel send failed: {exc}",
++            )
++        finally:
++            try:
++                await client.close()
++            except Exception:
++                pass
++        return TlonSendResult(
++            success=True,
++            command=command,
++            message_id=message_id,
++        )
 +
 +    async def _send_dm_message(self, chat_id: str, text: str) -> TlonSendResult:
 +        sent_at = int(time.time() * 1000)

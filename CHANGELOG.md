@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.2.2 - 2026-06-18
+
+### Fixed
+
+- Refreshed `tlon-pr.patch` from Hermes `tlon-apply` commit `fe5304e3a` to include home-channel inbound fixes: channel-history catch-up polling, startup seeding to avoid replay spam, and `TLON_HOME_CHANNEL` monitoring/owner-listen defaults even when the channel is hosted by another ship.
+- Preserved gateway slash-command dispatch in Tlon group channels by skipping recent-channel-context wrapping when the cleaned message starts with `/`; this fixes `/new` being treated as ordinary model input.
+- Added regression coverage for `channel-action-2` timestamp payloads, home-channel catch-up dispatch, settings-preserved home owner-listen behavior, and raw slash-command dispatch in the home channel.
+
+### Verified
+
+- Live patched Hermes checkout passed: `./venv/bin/python -m pytest plugins/platforms/tlon -q` → `364 passed, 21 subtests passed`.
+- The regenerated patch applies cleanly from Hermes `main` `426f321e8`.
+
 ## 0.2.1 - 2026-06-18
 
 ### Fixed
