@@ -215,29 +215,26 @@ run_verification() {
         fail "neither uv nor pip is available to pin aiohttp"
     fi
 
-    echo "==> Verifying syntax/imports..."
-    "$venv_python" -m py_compile gateway/run.py gateway/platforms/tlon.py tools/tlon_tool.py
+    echo "==> Verifying Tlon plugin syntax/imports..."
+    "$venv_python" -m py_compile plugins/platforms/tlon/*.py
     "$venv_python" - <<PY
 import sys
 sys.path.insert(0, "$HERMES_AGENT")
-import toolsets
-from gateway.platforms import tlon
-from tools import tlon_tool
+from gateway.config import Platform
+import plugins.platforms.tlon.adapter as adapter
+import plugins.platforms.tlon.tlon_tool as tlon_tool
 import aiohttp
-print('  toolsets OK')
-print('  tlon platform OK')
+print('  dynamic platform OK:', Platform('tlon'))
+print('  tlon plugin adapter OK')
 print('  tlon tool OK')
 print('  aiohttp', aiohttp.__version__, 'OK')
+print('  plugin requirements OK:', adapter.check_requirements())
 PY
     "$hermes_cli" --help > /dev/null && echo "  CLI OK"
 
     if [ "$RUN_TESTS" -eq 1 ]; then
-        echo "==> Running focused Tlon/update tests..."
-        "$venv_python" -m pytest \
-            tests/gateway/test_restart_notification.py \
-            tests/gateway/test_update_command.py \
-            tests/tools/test_tlon_tool.py \
-            -q -o 'addopts='
+        echo "==> Running focused upstream Tlon plugin tests..."
+        "$venv_python" -m pytest plugins/platforms/tlon/test_*.py -q -o 'addopts='
     else
         echo "==> Skipping focused tests (--no-tests)"
     fi
@@ -291,7 +288,7 @@ apply_patch_checked live
 run_verification "$VENV_PYTHON" "$HERMES_CLI"
 
 git add -A
-git commit -m "chore: reapply Tlon gateway patch (PR #26300)"
+git commit -m "chore: reapply Tlon platform plugin patch"
 echo "==> Committed: $(git log --oneline -1)"
 
 echo ""

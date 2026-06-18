@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-06-18
+
+### Changed
+
+- Rebased `tlon-pr.patch` onto Tlon's upstream Hermes plugin package at `tloncorp/tlon-apps/packages/hermes-tlon-adapter` (`develop` commit `77d6286`). The patch now adds `plugins/platforms/tlon/` as a native Hermes platform plugin instead of carrying the older in-tree gateway/tool integration.
+- Kept the local `aiohttp==3.13.5` pin in Hermes extras while upstream Hermes currently pins `3.13.4`; this preserves the known Startram duplicate-`Server` header fix.
+- Updated `apply-tlon.sh` verification to compile/import the plugin and run the upstream plugin test suite (`plugins/platforms/tlon/test_*.py`).
+
+### Verified
+
+- Upstream plugin import and dynamic `Platform("tlon")` registration work on Hermes `860cf51`.
+- Upstream plugin tests passed in a disposable Hermes checkout: `359 passed, 21 subtests passed`.
+
 ## 0.1.3 - 2026-06-15
 
 ### Fixed

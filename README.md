@@ -1,6 +1,14 @@
 # Hermes Tlon Patch Kit
 
-Portable scripts for updating a source-installed [Hermes Agent](https://github.com/NousResearch/hermes-agent) checkout while preserving the local Tlon/Urbit gateway adapter patch.
+Portable scripts for updating a source-installed [Hermes Agent](https://github.com/NousResearch/hermes-agent) checkout while preserving the Tlon/Urbit platform adapter patch.
+
+As of `0.2.0`, `tlon-pr.patch` tracks Tlon's upstream Hermes plugin package from:
+
+```text
+https://github.com/tloncorp/tlon-apps/tree/develop/packages/hermes-tlon-adapter
+```
+
+The patch now adds that package under Hermes' native platform-plugin layout (`plugins/platforms/tlon/`) instead of carrying the older in-tree `gateway/platforms/tlon.py` / `tools/tlon_tool.py` integration.
 
 This kit is intended for machines where Hermes is installed from a Git checkout, usually at:
 
@@ -31,7 +39,7 @@ bash ./update-hermes-with-tlon.sh
 
 Think of this kit as a small, repeatable rebase machine for a local Hermes customization.
 
-Hermes upstream moves over time. The Tlon gateway integration lives outside upstream for now, so it has to be reapplied after upstream updates. The unsafe version of that workflow is:
+Hermes upstream moves over time. The Tlon gateway integration now lives upstream in `tloncorp/tlon-apps` as a Hermes platform plugin, while this kit keeps a copy staged as a patch against Hermes until you choose to install/apply it locally. The unsafe version of that workflow is:
 
 ```text
 run hermes update directly
@@ -62,7 +70,7 @@ There are two scripts because they have different jobs:
 - `update-hermes-with-tlon.sh` is the outer workflow. It owns the safe update order: get back to clean upstream, run `hermes update`, then call the patch applicator.
 - `apply-tlon.sh` is the patch applicator. It owns Git hygiene, disposable-worktree preflight, conflict detection, dependency pinning, import checks, and focused tests.
 
-The patch file itself, `tlon-pr.patch`, is just the source delta: "given upstream Hermes, add the Tlon gateway/platform/tooling changes." It is intentionally dumb. The scripts provide the guardrails.
+The patch file itself, `tlon-pr.patch`, is the source delta: "given upstream Hermes, add the current Tlon platform plugin package and keep the known-good `aiohttp==3.13.5` pin." It is intentionally dumb. The scripts provide the guardrails.
 
 The important invariant is:
 
@@ -78,7 +86,7 @@ Do not let `hermes update` try to carry the Tlon patch through the update automa
 | --- | --- |
 | `update-hermes-with-tlon.sh` | Recommended wrapper: update Hermes from a clean upstream branch, then safely reapply Tlon. |
 | `apply-tlon.sh` | Safely applies `tlon-pr.patch` to a Hermes checkout. |
-| `tlon-pr.patch` | Reusable patch containing the local Tlon gateway integration changes. |
+| `tlon-pr.patch` | Reusable patch containing the Tlon platform plugin package from `tloncorp/tlon-apps` plus the local `aiohttp==3.13.5` pin. |
 | `VERSION` | Package version. |
 | `CHANGELOG.md` | Release history. |
 | `checksums.txt` | SHA-256 checksums for package files. |
