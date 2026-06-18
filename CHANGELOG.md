@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-## 0.2.4 - 2026-06-18
+## 0.3.0 - 2026-06-18
+
+### Changed
+
+- Promoted the monorepo `tlon` CLI build/pin change to a minor release because it changes the patchkit application workflow and runtime outbound-send dependency model.
 
 ### Fixed
 
