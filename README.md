@@ -1,5 +1,7 @@
 # Hermes Tlon Patch Kit
 
+This patch kit is no longer necessary. Suggest following the instructions [here](https://github.com/tloncorp/tlon-apps/tree/develop/packages/hermes-tlon-adapter) and installing it as a user plugin, rather than layering on top of the actual Hermes install like this does.
+
 Portable scripts for updating a source-installed [Hermes Agent](https://github.com/NousResearch/hermes-agent) checkout while preserving the Tlon/Urbit platform adapter patch.
 
 As of `0.2.3`, `tlon-pr.patch` tracks Tlon's upstream Hermes plugin package from:
