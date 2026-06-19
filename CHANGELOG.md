@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.3.1 - 2026-06-19
+
+### Fixed
+
+- Forced Hermes `TlonCLI.send_message()` to route ordinary DM and chat-channel sends through the pinned monorepo `tlon posts send` CLI path instead of bypassing `TLON_CLI` with local Python `chat-dm-action-2` / `channel-action-2` HTTP pokes.
+- Removed the adapter's local dotted-decimal writ-ID helper used only by the raw send workaround; writ IDs for ordinary sends now come from the monorepo Tlon implementation backed by `@tloncorp/api` / `@urbit/aura`.
+- Updated Tlon API regression tests so DM and chat-channel sends fail if they stop shelling out to `TLON_CLI posts send`.
+
+### Verified
+
+- Live patched Hermes checkout passed: `./venv/bin/python -m pytest plugins/platforms/tlon -q` → `364 passed, 21 subtests passed`.
+- Fake-runner verification confirmed DM and channel sends invoke `/home/michael/.hermes/bin/tlon-monorepo-0.4.1-77d6286af posts send ...`.
+
 ## 0.3.0 - 2026-06-18
 
 ### Changed

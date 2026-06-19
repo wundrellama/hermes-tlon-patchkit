@@ -1,6 +1,6 @@
 diff --git a/plugins/platforms/tlon/.env.example b/plugins/platforms/tlon/.env.example
 new file mode 100644
-index 000000000..6ba83316d
+index 000000000..544a607d0
 --- /dev/null
 +++ b/plugins/platforms/tlon/.env.example
 @@ -0,0 +1,107 @@
@@ -113,7 +113,7 @@ index 000000000..6ba83316d
 +HERMES_GATEWAY_ARGS=--replace
 diff --git a/plugins/platforms/tlon/README.md b/plugins/platforms/tlon/README.md
 new file mode 100644
-index 000000000..675d99ad2
+index 000000000..ca1dffa8b
 --- /dev/null
 +++ b/plugins/platforms/tlon/README.md
 @@ -0,0 +1,254 @@
@@ -4966,7 +4966,7 @@ index 000000000..77eda425b
 +}
 diff --git a/plugins/platforms/tlon/plugin.yaml b/plugins/platforms/tlon/plugin.yaml
 new file mode 100644
-index 000000000..550f804f6
+index 000000000..c484d467c
 --- /dev/null
 +++ b/plugins/platforms/tlon/plugin.yaml
 @@ -0,0 +1,202 @@
@@ -12441,10 +12441,10 @@ index 000000000..72daf708c
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/test_tlon_api.py b/plugins/platforms/tlon/test_tlon_api.py
 new file mode 100644
-index 000000000..587b44f77
+index 000000000..5ce0eacfe
 --- /dev/null
 +++ b/plugins/platforms/tlon/test_tlon_api.py
-@@ -0,0 +1,892 @@
+@@ -0,0 +1,838 @@
 +import asyncio
 +import importlib.util
 +import sys
@@ -12987,8 +12987,8 @@ index 000000000..587b44f77
 +
 +
 +class TlonCLITests(unittest.TestCase):
-+    def test_send_message_to_dm_uses_chat_dm_action_2_http_poke(self):
-+        fake_clients = []
++    def test_send_message_to_dm_uses_monorepo_tlon_cli(self):
++        calls = []
 +        cfg = tlon_api.TlonConfig.from_env(
 +            env={
 +                "TLON_NODE_URL": "https://zod.tlon.network",
@@ -12998,51 +12998,25 @@ index 000000000..587b44f77
 +            }
 +        )
 +
-+        def client_factory(client_cfg):
-+            client = FakeDmSendClient(client_cfg)
-+            fake_clients.append(client)
-+            return client
++        async def runner(command, env, timeout):
++            calls.append((tuple(command), dict(env), timeout))
++            return tlon_api.TlonProcessResult(returncode=0, stdout="Message sent\n")
 +
 +        async def run():
-+            cli = tlon_api.TlonCLI(cfg, client_factory=client_factory)
-+            with patch.object(tlon_api.time, "time", return_value=1781770387.0):
-+                return await cli.send_message("~nec", "hello from gateway")
++            cli = tlon_api.TlonCLI(cfg, runner=runner)
++            return await cli.send_message("~nec", "hello from gateway")
 +
 +        result = asyncio.run(run())
 +
 +        self.assertTrue(result.success)
-+        self.assertEqual(result.command, ("http", "chat-dm-action-2", "~nec"))
-+        self.assertEqual(result.message_id, "~zod/170.141.184.508.020.030.284.606.493.453.967.163")
-+        self.assertEqual(len(fake_clients), 1)
-+        client = fake_clients[0]
-+        self.assertTrue(client.authenticated)
-+        self.assertTrue(client.opened)
-+        self.assertTrue(client.closed)
-+        self.assertEqual(len(client.pokes), 1)
-+        app, mark, payload = client.pokes[0]
-+        self.assertEqual(app, "chat")
-+        self.assertEqual(mark, "chat-dm-action-2")
-+        self.assertEqual(payload["ship"], "~nec")
-+        self.assertEqual(payload["diff"]["id"], result.message_id)
-+        self.assertEqual(
-+            payload["diff"]["delta"],
-+            {
-+                "add": {
-+                    "essay": {
-+                        "content": [{"inline": ["hello from gateway"]}],
-+                        "sent": 1781770387000,
-+                        "author": "~zod",
-+                        "kind": "/chat",
-+                        "meta": None,
-+                        "blob": None,
-+                    },
-+                    "time": None,
-+                }
-+            },
-+        )
++        self.assertEqual(calls[0][0], ("tlon-test", "posts", "send", "~nec", "hello from gateway"))
++        self.assertEqual(result.command, calls[0][0])
++        self.assertEqual(calls[0][1]["TLON_NODE_URL"], "https://zod.tlon.network")
++        self.assertEqual(calls[0][1]["TLON_NODE_ID"], "~zod")
++        self.assertEqual(calls[0][1]["TLON_ACCESS_CODE"], "code")
 +
-+    def test_send_message_to_chat_channel_uses_channel_action_http_poke(self):
-+        fake_clients = []
++    def test_send_message_to_chat_channel_uses_monorepo_tlon_cli(self):
++        calls = []
 +        cfg = tlon_api.TlonConfig.from_env(
 +            env={
 +                "TLON_NODE_URL": "https://zod.tlon.network",
@@ -13052,50 +13026,22 @@ index 000000000..587b44f77
 +            }
 +        )
 +
-+        def client_factory(client_cfg):
-+            client = FakeDmSendClient(client_cfg)
-+            fake_clients.append(client)
-+            return client
++        async def runner(command, env, timeout):
++            calls.append((tuple(command), dict(env), timeout))
++            return tlon_api.TlonProcessResult(returncode=0, stdout="Message sent\n")
 +
 +        async def run():
-+            cli = tlon_api.TlonCLI(cfg, client_factory=client_factory)
-+            with patch.object(tlon_api.time, "time", return_value=1781770387.0):
-+                return await cli.send_message("chat/~zod/general", "hello home channel")
++            cli = tlon_api.TlonCLI(cfg, runner=runner)
++            return await cli.send_message("chat/~zod/general", "hello home channel")
 +
 +        result = asyncio.run(run())
 +
 +        self.assertTrue(result.success)
-+        self.assertEqual(result.command, ("http", "channel-action-2", "chat/~zod/general"))
-+        self.assertEqual(result.message_id, "170.141.184.508.020.030.284.606.493.453.967.163")
-+        self.assertEqual(len(fake_clients), 1)
-+        client = fake_clients[0]
-+        self.assertTrue(client.authenticated)
-+        self.assertTrue(client.opened)
-+        self.assertTrue(client.closed)
-+        self.assertEqual(len(client.pokes), 1)
-+        app, mark, payload = client.pokes[0]
-+        self.assertEqual(app, "channels")
-+        self.assertEqual(mark, "channel-action-2")
 +        self.assertEqual(
-+            payload,
-+            {
-+                "channel": {
-+                    "nest": "chat/~zod/general",
-+                    "action": {
-+                        "post": {
-+                            "add": {
-+                                "content": [{"inline": ["hello home channel"]}],
-+                                "sent": 1781770387000,
-+                                "author": "~zod",
-+                                "kind": "/chat",
-+                                "meta": None,
-+                                "blob": None,
-+                            }
-+                        }
-+                    },
-+                }
-+            },
++            calls[0][0],
++            ("tlon-test", "posts", "send", "chat/~zod/general", "hello home channel"),
 +        )
++        self.assertEqual(result.command, calls[0][0])
 +
 +    def test_send_reply_uses_tlon_cli(self):
 +        calls = []
@@ -13864,10 +13810,10 @@ index 000000000..ee91ec814
 +    unittest.main()
 diff --git a/plugins/platforms/tlon/tlon_api.py b/plugins/platforms/tlon/tlon_api.py
 new file mode 100644
-index 000000000..93e5f3281
+index 000000000..268ff686c
 --- /dev/null
 +++ b/plugins/platforms/tlon/tlon_api.py
-@@ -0,0 +1,1565 @@
+@@ -0,0 +1,1463 @@
 +"""Small Tlon helpers for the Hermes platform plugin.
 +
 +Writes go through the packaged ``tlon`` CLI. Reads use Eyre's SSE channel API.
@@ -14017,23 +13963,9 @@ index 000000000..93e5f3281
 +    return parsed if parsed >= 0 else default
 +
 +
-+DA_UNIX_EPOCH = 170141184475152167957503069145530368
-+
-+
 +def _format_da_from_unix_millis(value: float) -> str:
 +    dt = datetime.fromtimestamp(value / 1000.0, tz=timezone.utc)
 +    return f"~{dt.year}.{dt.month}.{dt.day}..{dt.hour:02d}.{dt.minute:02d}.{dt.second:02d}"
-+
-+
-+def _format_urbit_da_decimal_from_unix_millis(value: int) -> str:
-+    """Return the dotted decimal @da format Tlon v2 writ IDs use."""
-+    da_value = DA_UNIX_EPOCH + (int(value) * (1 << 64)) // 1_000_000
-+    text = str(da_value)
-+    parts: list[str] = []
-+    while text:
-+        parts.append(text[-3:])
-+        text = text[:-3]
-+    return ".".join(reversed(parts))
 +
 +
 +def _format_dr_seconds(seconds: int) -> str:
@@ -14547,104 +14479,16 @@ index 000000000..93e5f3281
 +        self._client_factory = client_factory or TlonSSEClient
 +
 +    async def send_message(self, chat_id: str, text: str) -> TlonSendResult:
++        """Send ordinary Tlon messages through the pinned monorepo CLI.
++
++        Do not hand-roll chat-dm-action-2 / channel-action-2 payloads here. The
++        monorepo tlon CLI routes posts send through upstream @tloncorp/api send
++        logic, including @urbit/aura ID formatting and current Story/author
++        shapes. Keeping Hermes on the CLI path prevents the Python adapter from
++        drifting from Tlon's client/server payload contract.
++        """
 +        target = str(chat_id or "").strip()
-+        normalized = normalize_ship(target)
-+        if normalized == target and normalized.startswith("~"):
-+            return await self._send_dm_message(normalized, text)
-+        nest = parse_channel_nest(target)
-+        if nest is not None and nest.get("type") == "chat":
-+            return await self._send_chat_channel_message(target, text)
-+        return await self._run(("posts", "send", chat_id, text))
-+
-+    async def _send_chat_channel_message(self, chat_id: str, text: str) -> TlonSendResult:
-+        sent_at = int(time.time() * 1000)
-+        message_id = _format_urbit_da_decimal_from_unix_millis(sent_at)
-+        payload = {
-+            "channel": {
-+                "nest": chat_id,
-+                "action": {
-+                    "post": {
-+                        "add": {
-+                            "content": [{"inline": [text]}],
-+                            "sent": sent_at,
-+                            "author": self.config.ship_name,
-+                            "kind": "/chat",
-+                            "meta": None,
-+                            "blob": None,
-+                        }
-+                    }
-+                },
-+            }
-+        }
-+        command = ("http", "channel-action-2", chat_id)
-+        client = self._client_factory(self.config)
-+        try:
-+            await client.authenticate()
-+            await client.open()
-+            await client.poke("channels", "channel-action-2", payload)
-+        except Exception as exc:
-+            return TlonSendResult(
-+                success=False,
-+                command=command,
-+                returncode=1,
-+                error=f"Tlon channel send failed: {exc}",
-+            )
-+        finally:
-+            try:
-+                await client.close()
-+            except Exception:
-+                pass
-+        return TlonSendResult(
-+            success=True,
-+            command=command,
-+            message_id=message_id,
-+        )
-+
-+    async def _send_dm_message(self, chat_id: str, text: str) -> TlonSendResult:
-+        sent_at = int(time.time() * 1000)
-+        message_id = f"{self.config.ship_name}/{_format_urbit_da_decimal_from_unix_millis(sent_at)}"
-+        payload = {
-+            "ship": chat_id,
-+            "diff": {
-+                "id": message_id,
-+                "delta": {
-+                    "add": {
-+                        "essay": {
-+                            "content": [{"inline": [text]}],
-+                            "sent": sent_at,
-+                            "author": self.config.ship_name,
-+                            "kind": "/chat",
-+                            "meta": None,
-+                            "blob": None,
-+                        },
-+                        "time": None,
-+                    }
-+                },
-+            },
-+        }
-+        command = ("http", "chat-dm-action-2", chat_id)
-+        client = self._client_factory(self.config)
-+        try:
-+            await client.authenticate()
-+            await client.open()
-+            await client.poke("chat", "chat-dm-action-2", payload)
-+        except Exception as exc:
-+            return TlonSendResult(
-+                success=False,
-+                command=command,
-+                returncode=1,
-+                error=f"Tlon DM send failed: {exc}",
-+            )
-+        finally:
-+            try:
-+                await client.close()
-+            except Exception:
-+                pass
-+        return TlonSendResult(
-+            success=True,
-+            command=command,
-+            message_id=message_id,
-+        )
++        return await self._run(("posts", "send", target, text))
 +
 +    async def send_reply(
 +        self,
